@@ -37,13 +37,30 @@ class NotificationServiceLocal {
   }
 
   /// Mark all as read for a given target role/division
-  static Future<void> markAllAsRead(String role, String division) async {
+  static Future<void> markAllAsRead(String role, String division, {String userId = '', String department = 'all'}) async {
+    String normalize(String s) => s.replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '').toLowerCase();
+
     final list = await getAllNotifications();
     for (final notif in list) {
-      if (notif.targetRole == 'all' ||
-          notif.targetRole == role ||
-          (role == 'student' && notif.targetDivision == division)) {
+      if (notif.targetRole == 'all' || notif.targetRole == role) {
         notif.isRead = true;
+      } else if (notif.targetRole == 'department') {
+        final normTarget = normalize(notif.targetDivision);
+        final normDepartment = normalize(department);
+        if (normTarget == 'all' || normTarget == normDepartment) {
+          notif.isRead = true;
+        }
+      } else if (notif.targetRole == 'teacher_and_class') {
+        final parts = notif.targetDivision.split('||');
+        if (parts.length == 2) {
+          final targetClass = parts[0].toLowerCase();
+          final targetTeacherId = parts[1].toLowerCase();
+          if (role == 'student' && division.toLowerCase() == targetClass) {
+            notif.isRead = true;
+          } else if (role == 'teacher' && userId.toLowerCase() == targetTeacherId) {
+            notif.isRead = true;
+          }
+        }
       }
     }
     await saveAllNotifications(list);
@@ -54,6 +71,7 @@ class NotificationServiceLocal {
     required String role,
     String division = 'all',
     String userId = '',
+    String department = 'all',
   }) async {
     final all = await getAllNotifications();
     if (role == 'admin') {
@@ -67,19 +85,42 @@ class NotificationServiceLocal {
       // Rule 1: targetRole is 'all'
       if (notif.targetRole == 'all') return true;
 
+      if (notif.targetRole == 'department') {
+        final normTarget = normalize(notif.targetDivision);
+        final normDepartment = normalize(department);
+        return normTarget == 'all' || normTarget == normDepartment;
+      }
+
       // Rule 2: matches exact role
       if (notif.targetRole == role) {
-        // If it's a student, check division
+        // If it's a student, check division or exact student ID
         if (role == 'student') {
           final normTarget = normalize(notif.targetDivision);
-          return normTarget == 'all' || normTarget == normDivision;
+          final normUserId = normalize(userId);
+          return normTarget == 'all' || normTarget == normDivision || normTarget == normUserId;
         }
         // If it's a teacher, check specific teacher ID
         if (role == 'teacher') {
           final normTarget = notif.targetDivision.toLowerCase();
           return normTarget == 'all' || normTarget == userId.toLowerCase();
         }
+        // Department notifications can still match all users, so allow by default for any other role logic
         return true;
+      }
+
+      // Rule 3: combined class + teacher notifications
+      if (notif.targetRole == 'teacher_and_class') {
+        final parts = notif.targetDivision.split('||');
+        if (parts.length != 2) return false;
+        final targetClass = normalize(parts[0]);
+        final targetTeacherId = parts[1].toLowerCase();
+
+        if (role == 'student') {
+          return targetClass == normDivision;
+        }
+        if (role == 'teacher') {
+          return targetTeacherId == userId.toLowerCase();
+        }
       }
 
       return false;

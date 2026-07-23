@@ -41,7 +41,7 @@ class _FacultyAvailabilityScreenState extends State<FacultyAvailabilityScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    if (!auth.isLoggedIn || auth.user?.role != 'admin') {
+    if (!auth.isLoggedIn || (auth.user?.role != 'admin' && auth.user?.role != 'teacher')) {
       return Scaffold(
         body: Center(
           child: Padding(
@@ -96,7 +96,7 @@ class _FacultyAvailabilityScreenState extends State<FacultyAvailabilityScreen> {
                       // Day selector dropdown
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _selectedDay,
+                          initialValue: _selectedDay,
                           decoration: InputDecoration(
                             labelText: 'Day',
                             labelStyle: GoogleFonts.poppins(color: Colors.deepPurple.shade900),
@@ -123,8 +123,6 @@ class _FacultyAvailabilityScreenState extends State<FacultyAvailabilityScreen> {
                           _buildLegendItem('Available', Colors.green),
                           const SizedBox(height: 4),
                           _buildLegendItem('Teaching', Colors.red),
-                          const SizedBox(height: 4),
-                          _buildLegendItem('On Leave', Colors.grey),
                         ],
                       ),
                     ],
@@ -156,15 +154,7 @@ class _FacultyAvailabilityScreenState extends State<FacultyAvailabilityScreen> {
                                       style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
                                     ),
                                   ),
-                                  if (faculty.isOnLeave)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(6)),
-                                      child: Text(
-                                        'On Leave',
-                                        style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
-                                      ),
-                                    ),
+                                  // 'On Leave' status removed from UI per request
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -205,12 +195,8 @@ class _FacultyAvailabilityScreenState extends State<FacultyAvailabilityScreen> {
                                   Color statusColorText = Colors.green.shade900;
                                   String slotLabelSubtitle = 'Free';
 
-                                  if (faculty.isOnLeave) {
-                                    statusColorBg = Colors.grey.shade100;
-                                    statusColorBorder = Colors.grey.shade300;
-                                    statusColorText = Colors.grey.shade600;
-                                    slotLabelSubtitle = 'Leave';
-                                  } else if (isTeaching) {
+                                  // Only show 'Teaching' status; treat other cases as available
+                                  if (isTeaching) {
                                     statusColorBg = Colors.red.shade100;
                                     statusColorBorder = Colors.red.shade300;
                                     statusColorText = Colors.red.shade900;

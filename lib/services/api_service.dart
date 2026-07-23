@@ -229,6 +229,17 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> Function({
+    required String lectureId,
+    required String title,
+    required String message,
+    required String notificationType,
+    required String className,
+    required String section,
+    String? college,
+    required String scheduledAt,
+  }) scheduleNotificationHandler = _defaultScheduleNotification;
+
   static Future<Map<String, dynamic>> scheduleNotification({
     required String lectureId,
     required String title,
@@ -236,26 +247,58 @@ class ApiService {
     required String notificationType,
     required String className,
     required String section,
+    String? college,
+    required String scheduledAt,
+  }) async {
+    return scheduleNotificationHandler(
+      lectureId: lectureId,
+      title: title,
+      message: message,
+      notificationType: notificationType,
+      className: className,
+      section: section,
+      college: college,
+      scheduledAt: scheduledAt,
+    );
+  }
+
+  static Future<Map<String, dynamic>> _defaultScheduleNotification({
+    required String lectureId,
+    required String title,
+    required String message,
+    required String notificationType,
+    required String className,
+    required String section,
+    String? college,
     required String scheduledAt,
   }) async {
     try {
+      final payload = {
+        'lectureId': lectureId,
+        'title': title,
+        'message': message,
+        'notificationType': notificationType,
+        'className': className,
+        'section': section,
+        'scheduledAt': scheduledAt,
+      };
+      if (college != null) {
+        payload['college'] = college;
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/api/notifications/schedule'),
         headers: _headers,
-        body: jsonEncode({
-          'lectureId': lectureId,
-          'title': title,
-          'message': message,
-          'notificationType': notificationType,
-          'className': className,
-          'section': section,
-          'scheduledAt': scheduledAt,
-        }),
+        body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 60));
       return jsonDecode(response.body);
     } catch (e) {
       return {'success': false, 'message': e.toString()};
     }
+  }
+
+  static void resetScheduleNotificationHandler() {
+    scheduleNotificationHandler = _defaultScheduleNotification;
   }
 
   static Future<List<dynamic>> getStudentNotifications() async {

@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../models/timetable_entry_model.dart';
 import '../models/time_slot_model.dart';
 import '../services/timetable_service.dart';
+import '../services/notification_service_local.dart';
 import '../utils/app_constants.dart';
 
 class StudentDashboard extends StatefulWidget {
@@ -18,6 +19,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   String _selectedDay = 'Monday';
   List<TimetableEntry> _classEntries = [];
   bool _isLoading = true;
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
@@ -32,6 +34,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
     if (user != null) {
       final allEntries = await TimetableService.getAllEntries();
+      final notifications = await NotificationServiceLocal.getNotificationsForUser(
+        role: user.role,
+        division: user.className ?? 'all',
+        userId: user.id,
+        department: user.college ?? 'all',
+      );
       // Filter for this student's class (division) e.g. "SE-A"
       String normalize(String s) => s.replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '').toLowerCase();
       final normClass = normalize(user.className ?? '');
@@ -41,6 +49,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           final matchesDay = e.day.toLowerCase() == _selectedDay.toLowerCase();
           return matchesClass && matchesDay;
         }).toList();
+        _unreadNotifications = notifications.where((n) => !n.isRead).length;
         _isLoading = false;
       });
     } else {
@@ -151,8 +160,30 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           onPressed: () {
                             Navigator.of(context).pushNamed('/notifications');
                           },
-                          icon: const Icon(Icons.notifications, size: 20),
-                          label: const Text('View Class Notifications & Reminders'),
+                          icon: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              const Icon(Icons.notifications, size: 20),
+                              if (_unreadNotifications > 0)
+                                Positioned(
+                                  right: -6,
+                                  top: -6,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          label: Text(
+                            _unreadNotifications > 0
+                                ? 'View Class Notifications & Reminders ($_unreadNotifications)'
+                                : 'View Class Notifications & Reminders',
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: primaryColor,

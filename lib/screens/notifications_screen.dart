@@ -5,8 +5,16 @@ import '../providers/auth_provider.dart';
 import '../models/app_notification_model.dart';
 import '../services/notification_service_local.dart';
 
+bool canDeleteNotification(String? role) {
+  return role == 'admin' || role == 'teacher';
+}
+
+int countUnreadNotifications(List<AppNotification> notifications) {
+  return notifications.where((n) => !n.isRead).length;
+}
+
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({Key? key}) : super(key: key);
+  const NotificationsScreen({super.key});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -32,13 +40,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         role: user.role,
         division: user.className ?? 'all',
         userId: user.id,
+        department: user.college ?? 'all',
       );
       setState(() {
         _notifications = list;
         _isLoading = false;
       });
       // Mark all read for this user
-      await NotificationServiceLocal.markAllAsRead(user.role, user.className ?? 'all');
+      await NotificationServiceLocal.markAllAsRead(
+        user.role,
+        user.className ?? 'all',
+        userId: user.id,
+        department: user.college ?? 'all',
+      );
     } else {
       setState(() => _isLoading = false);
     }
@@ -52,17 +66,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Colors.deepPurple.shade300;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final currentRole = auth.user?.role;
+    final unreadCount = countUnreadNotifications(_notifications);
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
-        title: Text(
-          'Notifications Inbox',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        title: Row(
+          children: [
+            Text(
+              'Notifications Inbox',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            if (unreadCount > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$unreadCount',
+                  style: GoogleFonts.poppins(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         elevation: 0,
       ),
@@ -146,10 +185,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               ),
                             ],
                           ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                            onPressed: () => _deleteNotification(notif.id),
-                          ),
+                          trailing: canDeleteNotification(currentRole)
+                              ? IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                  onPressed: () => _deleteNotification(notif.id),
+                                )
+                              : null,
                         ),
                       );
                     },

@@ -38,7 +38,7 @@ class _RoomAvailabilityScreenState extends State<RoomAvailabilityScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    if (!auth.isLoggedIn || auth.user?.role != 'admin') {
+    if (!auth.isLoggedIn || (auth.user?.role != 'admin' && auth.user?.role != 'teacher')) {
       return Scaffold(
         body: Center(
           child: Padding(
@@ -103,7 +103,7 @@ class _RoomAvailabilityScreenState extends State<RoomAvailabilityScreen> {
                           // Day Selector Dropdown
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _selectedDay,
+                              initialValue: _selectedDay,
                               decoration: InputDecoration(
                                 labelText: 'Day',
                                 labelStyle: GoogleFonts.poppins(color: Colors.deepPurple.shade900),
@@ -126,7 +126,7 @@ class _RoomAvailabilityScreenState extends State<RoomAvailabilityScreen> {
                           // Type Filter Selector
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _roomTypeFilter,
+                              initialValue: _roomTypeFilter,
                               decoration: InputDecoration(
                                 labelText: 'Room Type',
                                 labelStyle: GoogleFonts.poppins(color: Colors.deepPurple.shade900),

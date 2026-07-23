@@ -4,7 +4,9 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_notification_model.dart';
 import 'api_service.dart';
+import 'notification_service_local.dart';
 import '../main.dart'; // To access navigatorKey
 
 class ReminderService {
@@ -127,10 +129,35 @@ class ReminderService {
         payload: payload,
       );
 
-
     } catch (e) {
       // Error scheduling notification — handled silently
     }
+  }
+
+  static Future<void> processRemoteMessage(RemoteMessage message) async {
+    final title = message.notification?.title;
+    final body = message.notification?.body;
+    if (title == null && body == null) return;
+
+    await showNotification(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title: title ?? 'Notification',
+      body: body ?? '',
+      payload: 'notification',
+    );
+
+    final localNotification = AppNotification(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title ?? 'Notification',
+      message: body ?? '',
+      targetRole: 'all',
+      targetDivision: 'all',
+      senderId: 'system',
+      senderName: 'Admin',
+      createdAt: DateTime.now().toString(),
+    );
+
+    await NotificationServiceLocal.createNotification(localNotification);
   }
 
   // Cancel specific notification

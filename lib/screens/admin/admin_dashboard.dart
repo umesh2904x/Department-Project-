@@ -6,7 +6,6 @@ import '../../services/faculty_service.dart';
 import '../../services/timetable_service.dart';
 import '../../services/notification_service_local.dart';
 import '../../models/timetable_entry_model.dart';
-import '../../models/faculty_model.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -18,7 +17,6 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _activeRoomsCount = 0;
   int _totalLecturesToday = 0;
-  int _facultyOnLeaveCount = 0;
   int _notificationsCount = 0;
   bool _isLoading = true;
   List<TimetableEntry> _todayLectures = [];
@@ -34,7 +32,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final today = _getCurrentDayName();
       final entries = await TimetableService.getAllEntries();
-      final facultyList = await FacultyService.getAllFaculty();
       final notifications = await NotificationServiceLocal.getAllNotifications();
 
       // Today's lectures
@@ -46,7 +43,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       setState(() {
         _totalLecturesToday = todayEntries.length;
         _activeRoomsCount = roomsUsed.length;
-        _facultyOnLeaveCount = facultyList.where((f) => f.isOnLeave).length;
         _notificationsCount = notifications.length;
         _todayLectures = todayEntries;
         _isLoading = false;
@@ -165,7 +161,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     children: [
                       _buildMetricCard('Today\'s Lectures', '$_totalLecturesToday', Icons.book, Colors.blue),
                       _buildMetricCard('Rooms in Use', '$_activeRoomsCount', Icons.room, Colors.green),
-                      _buildMetricCard('Faculty on Leave', '$_facultyOnLeaveCount', Icons.no_accounts, Colors.red),
                       _buildMetricCard('Notifications', '$_notificationsCount', Icons.notifications_active, Colors.orange),
                     ],
                   ),

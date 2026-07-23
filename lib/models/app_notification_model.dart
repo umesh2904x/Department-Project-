@@ -5,8 +5,8 @@ class AppNotification {
   final String id;
   final String title;
   final String message;
-  final String targetRole; // 'all' | 'student' | 'teacher'
-  final String targetDivision; // e.g. 'SE-A', 'all' if not student-specific
+  final String targetRole; // 'all' | 'student' | 'teacher' | 'department'
+  final String targetDivision; // e.g. 'SE-A', department name, or 'all'
   final String senderId;
   final String senderName;
   final String createdAt;

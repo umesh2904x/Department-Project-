@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../models/timetable_entry_model.dart';
 import '../models/time_slot_model.dart';
 import '../services/timetable_service.dart';
+import '../services/notification_service_local.dart';
 import '../utils/app_constants.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -18,6 +19,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   String _selectedDay = 'Monday';
   List<TimetableEntry> _myEntries = [];
   bool _isLoading = true;
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
@@ -32,6 +34,12 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
     if (user != null) {
       final allEntries = await TimetableService.getAllEntries();
+      final notifications = await NotificationServiceLocal.getNotificationsForUser(
+        role: user.role,
+        division: user.className ?? 'all',
+        userId: user.id,
+        department: user.college ?? 'all',
+      );
       // Filter for this teacher specifically
       setState(() {
         _myEntries = allEntries.where((e) {
@@ -40,6 +48,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           final matchesDay = e.day.toLowerCase() == _selectedDay.toLowerCase();
           return matchesFaculty && matchesDay;
         }).toList();
+        _unreadNotifications = notifications.where((n) => !n.isRead).length;
         _isLoading = false;
       });
     } else {
@@ -109,6 +118,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             onPressed: _loadTeacherSchedule,
           ),
           IconButton(
+            icon: const Icon(Icons.people, color: Colors.white),
+            tooltip: 'Faculty Availability',
+            onPressed: () {
+              Navigator.of(context).pushNamed('/admin/faculty_availability');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
           ),
@@ -144,32 +160,76 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                       ),
                       const SizedBox(height: 16),
                       // Action buttons
-                      Row(
+                      Column(
                         children: [
-                          Expanded(
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.of(context).pushNamed('/send_notification');
+                                  },
+                                  icon: const Icon(Icons.send, size: 18),
+                                  label: const Text('Send Notification'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: primaryColor,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.of(context).pushNamed('/notifications');
+                                  },
+                                  icon: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      const Icon(Icons.notifications_active, size: 18, color: Colors.white),
+                                      if (_unreadNotifications > 0)
+                                        Positioned(
+                                          right: -6,
+                                          top: -6,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  label: Text(
+                                    _unreadNotifications > 0
+                                        ? 'View Inbox ($_unreadNotifications)'
+                                        : 'View Inbox',
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Colors.white),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: () {
-                                Navigator.of(context).pushNamed('/send_notification');
+                                Navigator.of(context).pushNamed('/admin/room_availability');
                               },
-                              icon: const Icon(Icons.send, size: 18),
-                              label: const Text('Send Notification'),
+                              icon: const Icon(Icons.grid_view, size: 18),
+                              label: const Text('Room Availability'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: primaryColor,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.of(context).pushNamed('/notifications');
-                              },
-                              icon: const Icon(Icons.notifications_active, size: 18, color: Colors.white),
-                              label: const Text('View Inbox', style: TextStyle(color: Colors.white)),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.white),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             ),

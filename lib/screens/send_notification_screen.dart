@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,12 +7,13 @@ import '../providers/auth_provider.dart';
 import '../widgets/custom_input_field.dart';
 import '../models/app_notification_model.dart';
 import '../services/notification_service_local.dart';
+import '../services/api_service.dart';
 import '../utils/app_constants.dart';
 import '../models/faculty_model.dart';
 import '../services/faculty_service.dart';
 
 class SendNotificationScreen extends StatefulWidget {
-  const SendNotificationScreen({Key? key}) : super(key: key);
+  const SendNotificationScreen({super.key});
 
   @override
   State<SendNotificationScreen> createState() => _SendNotificationScreenState();
@@ -19,9 +22,9 @@ class SendNotificationScreen extends StatefulWidget {
 class _SendNotificationScreenState extends State<SendNotificationScreen> {
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
-  String _selectedTargetRole = 'student'; // 'all', 'teacher', 'student'
+  String _selectedTargetRole = 'class'; // 'all', 'teachers', 'teacher', 'class'
   String _selectedDivision = 'SE-A';
-  String _selectedTeacherId = 'all';
+  String _selectedTeacherId = '';
   List<FacultyMember> _facultyList = [];
   bool _isSending = false;
 
@@ -29,12 +32,25 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
   void initState() {
     super.initState();
     _loadFaculty();
+    // Pre-select defaults based on current user role (set after first frame)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final user = auth.user;
+      if (user != null && user.role == 'teacher') {
+        setState(() {
+          _selectedTargetRole = 'teacher';
+        });
+      }
+    });
   }
 
   void _loadFaculty() async {
     final list = await FacultyService.getAllFaculty();
     setState(() {
       _facultyList = list;
+      if (_selectedTeacherId.isEmpty && list.isNotEmpty) {
+        _selectedTeacherId = list.first.id;
+      }
     });
   }
 
@@ -56,6 +72,31 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
       return;
     }
 
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Confirm Send'),
+          content: const Text('Send this notification to the selected recipients?'),
+          actions: [
+            TextButton(
+              key: const Key('cancelSendDialogButton'),
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              key: const Key('confirmSendDialogButton'),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Send'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
     setState(() => _isSending = true);
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -64,11 +105,25 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
     if (user != null) {
       // Create new local notification
       final String targetDivision;
-      if (_selectedTargetRole == 'student') {
+      final String targetRole;
+
+      if (_selectedTargetRole == 'class') {
+        targetRole = 'student';
         targetDivision = _selectedDivision;
       } else if (_selectedTargetRole == 'teacher') {
+        targetRole = 'teacher';
         targetDivision = _selectedTeacherId;
+      } else if (_selectedTargetRole == 'teacher_and_class') {
+        targetRole = 'teacher_and_class';
+        targetDivision = '$_selectedDivision||$_selectedTeacherId';
+      } else if (_selectedTargetRole == 'department') {
+        targetRole = 'department';
+        targetDivision = user.college?.trim() ?? 'all';
+      } else if (_selectedTargetRole == 'teachers') {
+        targetRole = 'teacher';
+        targetDivision = 'all';
       } else {
+        targetRole = 'all';
         targetDivision = 'all';
       }
 
@@ -76,24 +131,50 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: title,
         message: message,
-        targetRole: _selectedTargetRole,
+        targetRole: targetRole,
         targetDivision: targetDivision,
         senderId: user.id,
         senderName: user.name,
         createdAt: DateTime.now().toString(),
       );
 
+      // Persist locally immediately
       await NotificationServiceLocal.createNotification(notification);
-
       setState(() => _isSending = false);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notification sent successfully!'), backgroundColor: Colors.green),
+        const SnackBar(content: Text('Saved locally. Sending in background...'), backgroundColor: Colors.green),
       );
 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) Navigator.pop(context);
-      });
+      unawaited(ApiService.scheduleNotification(
+        lectureId: '',
+        title: title,
+        message: message,
+        notificationType: targetRole,
+        className: (targetRole == 'student' || _selectedTargetRole == 'class') ? _selectedDivision : '',
+        section: '',
+        college: targetRole == 'department' ? targetDivision : null,
+        scheduledAt: DateTime.now().toIso8601String(),
+      ).then((apiResp) {
+        if (apiResp['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Notification sent successfully!'), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Saved locally. Server error: ${apiResp['message'] ?? 'unknown'}'), backgroundColor: Colors.orange),
+          );
+        }
+      }).catchError((e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved locally. Failed to reach server.'), backgroundColor: Colors.orange),
+        );
+      }));
+
+      if (Navigator.of(context).canPop()) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) Navigator.pop(context);
+        });
+      }
     } else {
       setState(() => _isSending = false);
     }
@@ -138,6 +219,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
 
     final user = auth.user;
     final isAdmin = user?.role == 'admin';
+    final isTeacher = user?.role == 'teacher';
     final primaryColor = Colors.deepPurple.shade300;
 
     return Scaffold(
@@ -163,6 +245,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
 
               // Title input
               CustomInputField(
+                inputKey: const Key('notificationTitleField'),
                 label: 'Notification Title',
                 hint: 'e.g., Exam Schedule Published, Holiday Announcement',
                 controller: _titleController,
@@ -177,6 +260,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
               ),
               const SizedBox(height: 6),
               TextField(
+                key: const Key('notificationMessageField'),
                 controller: _messageController,
                 maxLines: 4,
                 decoration: InputDecoration(
@@ -187,23 +271,32 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Target audience selection
-              if (isAdmin) ...[
+              // Target audience selection for admin and teachers
+              if (isAdmin || isTeacher) ...[
                 Text(
                   'Target Audience',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: _selectedTargetRole,
+                  initialValue: _selectedTargetRole,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All Users')),
-                    DropdownMenuItem(value: 'teacher', child: Text('All Teachers')),
-                    DropdownMenuItem(value: 'student', child: Text('Student Division')),
-                  ],
+                  items: (isAdmin)
+                      ? const [
+                          DropdownMenuItem(value: 'all', child: Text('All Users')),
+                          DropdownMenuItem(value: 'teachers', child: Text('All Teachers')),
+                          DropdownMenuItem(value: 'department', child: Text('Specific Department')),
+                          DropdownMenuItem(value: 'teacher', child: Text('Specific Teacher')),
+                          DropdownMenuItem(value: 'class', child: Text('Specific Class')),
+                          DropdownMenuItem(value: 'teacher_and_class', child: Text('Specific Class & Teacher')),
+                        ]
+                      : const [
+                          DropdownMenuItem(value: 'department', child: Text('Specific Department')),
+                          DropdownMenuItem(value: 'teacher', child: Text('Specific Teacher')),
+                          DropdownMenuItem(value: 'class', child: Text('Specific Class')),
+                        ],
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedTargetRole = val);
                   },
@@ -211,24 +304,25 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // Teacher selector (shown if admin selects teacher target audience)
-              if (isAdmin && _selectedTargetRole == 'teacher') ...[
+              // Teacher selector (shown if admin or teacher selects specific teacher)
+              if ((isAdmin || isTeacher) && (_selectedTargetRole == 'teacher' || _selectedTargetRole == 'teacher_and_class')) ...[
                 Text(
                   'Select Target Teacher',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: _selectedTeacherId,
+                  initialValue: _facultyList.isNotEmpty ? _selectedTeacherId : null,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  items: [
-                    const DropdownMenuItem(value: 'all', child: Text('All Teachers')),
-                    ..._facultyList.map((f) {
-                      return DropdownMenuItem(value: f.id, child: Text(f.name));
-                    }),
-                  ],
+                  items: _facultyList.isNotEmpty
+                      ? _facultyList.map((f) {
+                          return DropdownMenuItem(value: f.id, child: Text(f.name));
+                        }).toList()
+                      : [
+                          const DropdownMenuItem(value: '', child: Text('No teachers available')),
+                        ],
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedTeacherId = val);
                   },
@@ -236,15 +330,15 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                 const SizedBox(height: 20),
               ],
 
-              // Division selector (shown for teachers, or if admin selects students)
-              if (!isAdmin || _selectedTargetRole == 'student') ...[
+              // Division selector (shown if admin or teacher selects specific class or combined target)
+              if ((isAdmin || isTeacher) && (_selectedTargetRole == 'class' || _selectedTargetRole == 'teacher_and_class')) ...[
                 Text(
-                  'Select Student Division',
+                  'Select Target Class',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: _selectedDivision,
+                  initialValue: _selectedDivision,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -258,11 +352,13 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                 const SizedBox(height: 20),
               ],
 
+
               const SizedBox(height: 20),
               // Send Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
+                  key: const Key('sendNotificationSubmit'),
                   onPressed: _isSending ? null : _sendNotification,
                   icon: const Icon(Icons.send, color: Colors.white),
                   label: _isSending

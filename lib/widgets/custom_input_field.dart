@@ -8,16 +8,18 @@ class CustomInputField extends StatefulWidget {
   final TextInputType keyboardType;
   final bool isPassword;
   final IconData? prefixIcon;
+  final Key? inputKey;
 
   const CustomInputField({
-    Key? key,
+    super.key,
     required this.label,
     required this.hint,
     required this.controller,
     this.keyboardType = TextInputType.text,
     this.isPassword = false,
     this.prefixIcon,
-  }) : super(key: key);
+    this.inputKey,
+  });
 
   @override
   State<CustomInputField> createState() => _CustomInputFieldState();
@@ -48,6 +50,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          key: widget.inputKey,
           controller: widget.controller,
           keyboardType: widget.keyboardType,
           obscureText: _obscureText,
@@ -78,7 +81,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
                   )
                 : null,
             filled: true,
-            fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+            fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
