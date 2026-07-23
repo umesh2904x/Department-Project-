@@ -15,7 +15,7 @@ class LoadingWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            color: Colors.teal.shade600,
+            color: Colors.deepPurple.shade600,
             strokeWidth: 4,
           ),
           const SizedBox(height: 16),

@@ -56,7 +56,7 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade600,
+        backgroundColor: Colors.deepPurple.shade600,
         title: Text(
           'Weekly Timetable',
           style: GoogleFonts.poppins(
@@ -70,7 +70,7 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
         children: [
           // Day selector
           Container(
-            color: Colors.teal.shade50,
+            color: Colors.deepPurple.shade50,
             padding: EdgeInsets.all(12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -87,13 +87,13 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isSelected
-                            ? Colors.teal.shade600
+                            ? Colors.deepPurple.shade600
                             : Colors.white,
                         foregroundColor:
-                            isSelected ? Colors.white : Colors.teal,
+                            isSelected ? Colors.white : Colors.deepPurple,
                         side: BorderSide(
                           color: isSelected
-                              ? Colors.teal.shade600
+                              ? Colors.deepPurple.shade600
                               : Colors.grey.shade300,
                         ),
                       ),
@@ -235,7 +235,7 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                                     Row(
                                       children: [
                                         Icon(Icons.schedule,
-                                            size: 18, color: Colors.teal),
+                                            size: 18, color: Colors.deepPurple),
                                         SizedBox(width: 8),
                                         Text(
                                           '${entry.startTime} - ${entry.endTime}',
@@ -338,14 +338,14 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
 
   Color _getColorForSubject(String subject) {
     final colors = {
-      'Mathematics': Colors.teal,
+      'Mathematics': Colors.deepPurple,
       'English': Colors.green,
       'Science': Colors.purple,
       'History': Colors.orange,
       'IT': Colors.red,
-      'Chemistry': Colors.teal,
+      'Chemistry': Colors.deepPurple,
     };
 
-    return colors[subject] ?? Colors.teal;
+    return colors[subject] ?? Colors.deepPurple;
   }
 }

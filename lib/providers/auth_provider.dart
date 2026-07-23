@@ -2,19 +2,21 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_model.dart';
-import '../services/api_service.dart';
+import '../utils/app_constants.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _error;
   bool _isLoggedIn = false;
+  bool _isCheckingStatus = true;
 
   // Getters
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _isLoggedIn;
+  bool get isCheckingStatus => _isCheckingStatus;
 
   AuthProvider() {
     _checkLoginStatus();
@@ -23,17 +25,17 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _checkLoginStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken');
       final userData = prefs.getString('userData');
 
-      if (token != null && userData != null) {
-        ApiService.setToken(token);
+      if (userData != null) {
         _user = User.fromJson(jsonDecode(userData));
         _isLoggedIn = true;
-        notifyListeners();
       }
-    } catch (e) {
-      // Error silently handled — user will see login screen
+    } catch (_) {
+      // Handled silently
+    } finally {
+      _isCheckingStatus = false;
+      notifyListeners();
     }
   }
 
@@ -47,100 +49,47 @@ class AuthProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final result = await ApiService.login(
-        emailOrUsername: emailOrUsername,
-        password: password,
-        role: role,
-      );
+      final username = emailOrUsername.trim().toLowerCase();
+      final pass = password.trim();
 
-      if (result['success']) {
-        _user = result['user'];
-        _isLoggedIn = true;
-        
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('authToken', result['token']);
-        await prefs.setString('userData', jsonEncode(_user!.toJson()));
-        
-        ApiService.setToken(result['token']);
+      if (AppConstants.credentials.containsKey(username)) {
+        final info = AppConstants.credentials[username]!;
+        if (info['password'] == pass && info['role'] == role) {
+          final mappedUser = User(
+            id: info['id'] ?? info['division'] ?? username,
+            username: username,
+            name: info['name'] ?? username,
+            email: info['role'] == 'teacher' ? '$username@college.edu' : '$username@student.edu',
+            role: info['role']!,
+            className: info['division'] ?? '',
+            section: 'A', // Default section
+            specialization: info['division'] != null ? 'Core' : '',
+            college: 'CSE (Data Science) Department',
+            token: 'local-token-$username',
+          );
 
-        _isLoading = false;
-        notifyListeners();
-        return result;
-      } else {
-        _error = result['message'];
-        _isLoading = false;
-        notifyListeners();
-        return result;
+          _user = mappedUser;
+          _isLoggedIn = true;
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('userData', jsonEncode(_user!.toJson()));
+          await prefs.setString('authToken', _user!.token!);
+
+          _isLoading = false;
+          notifyListeners();
+          return {'success': true, 'user': _user};
+        }
       }
+
+      _error = 'Invalid credentials or role mismatch';
+      _isLoading = false;
+      notifyListeners();
+      return {'success': false, 'message': _error};
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
       return {'success': false, 'message': _error};
-    }
-  }
-
-  Future<bool> register({
-    required String emailOrUsername,
-    required String name,
-    required String password,
-    required String role,
-    String? className,
-    String? section,
-    String? specialization,
-    String? college,
-    String? phone,
-  }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      final result = await ApiService.register(
-        emailOrUsername: emailOrUsername,
-        name: name,
-        password: password,
-        role: role,
-        className: className,
-        section: section,
-        specialization: specialization,
-        college: college,
-        phone: phone,
-      );
-
-      if (result['success']) {
-        final apiUser = result['user'] as User;
-        _user = User(
-          id: apiUser.id,
-          username: apiUser.username,
-          name: apiUser.name,
-          email: apiUser.email,
-          role: apiUser.role,
-          className: apiUser.className,
-          section: apiUser.section,
-          specialization: apiUser.specialization ?? specialization,
-          college: apiUser.college ?? college,
-          token: apiUser.token,
-        );
-        _isLoggedIn = true;
-        
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userData', jsonEncode(_user!.toJson()));
-        
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _error = result['message'];
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return false;
     }
   }
 
@@ -197,42 +146,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> deleteAccount() async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final res = await ApiService.deleteAccount();
-      if (res['success'] != true) {
-        _error = res['message'] ?? 'Failed to delete account';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('authToken');
-      await prefs.remove('userData');
-      
-      final email = _user?.email;
-      if (email != null) {
-        await prefs.remove('student_roll_no_v1_${email.trim().toLowerCase()}');
-        await prefs.remove('teacher_id_no_v1_${email.trim().toLowerCase()}');
-      }
-
-      _user = null;
-      _isLoggedIn = false;
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
   Future<void> logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -242,8 +155,8 @@ class AuthProvider extends ChangeNotifier {
       _user = null;
       _isLoggedIn = false;
       notifyListeners();
-    } catch (e) {
-      // Logout error handled silently
+    } catch (_) {
+      // Handled silently
     }
   }
 }

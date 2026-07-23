@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/lecture_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../providers/auth_provider.dart';
+import '../models/app_notification_model.dart';
+import '../services/notification_service_local.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
@@ -11,204 +13,148 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  List<AppNotification> _notifications = [];
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    // Load notifications when screen opens
-    Future.delayed(Duration.zero, () {
-      Provider.of<LectureProvider>(context, listen: false)
-          .getStudentNotifications();
-    });
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final user = auth.user;
+
+    if (user != null) {
+      final list = await NotificationServiceLocal.getNotificationsForUser(
+        role: user.role,
+        division: user.className ?? 'all',
+        userId: user.id,
+      );
+      setState(() {
+        _notifications = list;
+        _isLoading = false;
+      });
+      // Mark all read for this user
+      await NotificationServiceLocal.markAllAsRead(user.role, user.className ?? 'all');
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _deleteNotification(String id) async {
+    await NotificationServiceLocal.deleteNotification(id);
+    _loadNotifications();
   }
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Colors.deepPurple.shade300;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade600,
+        backgroundColor: primaryColor,
         title: Text(
-          'Notifications',
+          'Notifications Inbox',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        centerTitle: true,
+        elevation: 0,
       ),
-      body: Consumer<LectureProvider>(
-        builder: (context, lectureProvider, _) {
-          // Show loading
-          if (lectureProvider.isLoading) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          // Show empty state
-          if (lectureProvider.notifications.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.notifications_off,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'No notifications yet',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'You will see notifications here',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.grey.shade400,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Show notifications list
-          // Show notifications list
-          return RefreshIndicator(
-            onRefresh: () async {
-              await lectureProvider.getStudentNotifications();
-            },
-            child: ListView.builder(
-              itemCount: lectureProvider.notifications.length,
-              padding: const EdgeInsets.all(12),
-              itemBuilder: (context, index) {
-                final notification = lectureProvider.notifications[index];
-                final bool isRead = notification['isRead'] == 1 || notification['isRead'] == true;
-                final String id = notification['id']?.toString() ?? '';
-
-                return Card(
-                  elevation: isRead ? 0 : 4,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isRead
-                            ? Colors.grey.shade300
-                            : Colors.teal.shade300,
-                        width: isRead ? 0.5 : 2,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _notifications.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.notifications_off, size: 80, color: Colors.grey.shade400),
+                      const SizedBox(height: 20),
+                      Text(
+                        'No notifications yet',
+                        style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
                       ),
-                    ),
-                    child: ListTile(
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      leading: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isRead
-                              ? Colors.grey.shade200
-                              : Colors.teal.shade100,
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.notifications,
-                            color: isRead
-                                ? Colors.grey
-                                : Colors.teal,
-                            size: 28,
+                      const SizedBox(height: 10),
+                      Text(
+                        'You will see broadcast messages here.',
+                        style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadNotifications,
+                  child: ListView.builder(
+                    itemCount: _notifications.length,
+                    padding: const EdgeInsets.all(16),
+                    itemBuilder: (context, index) {
+                      final notif = _notifications[index];
+
+                      return Card(
+                        elevation: notif.isRead ? 0 : 3,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: notif.isRead ? Colors.grey.shade300 : Colors.deepPurple.shade300,
+                            width: notif.isRead ? 0.5 : 2,
                           ),
                         ),
-                      ),
-                      title: Text(
-                        notification['title'] ?? 'Lecture Reminder',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: isRead
-                              ? Colors.grey.shade600
-                              : Colors.black,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          Text(
-                            notification['message'] ?? '',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey.shade700,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          leading: CircleAvatar(
+                            backgroundColor: notif.isRead ? Colors.grey.shade100 : Colors.deepPurple.shade50,
+                            child: Icon(
+                              Icons.notifications,
+                              color: notif.isRead ? Colors.grey : Colors.deepPurple.shade700,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          title: Text(
+                            notif.title,
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: notif.isRead ? Colors.grey.shade600 : Colors.black87,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const SizedBox(height: 6),
                               Text(
-                                'Type: ${notification['notificationType'] ?? 'N/A'}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade500,
-                                ),
+                                notif.message,
+                                style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade800),
                               ),
-                              if (!isRead)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'From: ${notif.senderName}',
+                                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.teal.shade100,
-                                    borderRadius: BorderRadius.circular(8),
+                                  Text(
+                                    notif.createdAt.split(' ').first,
+                                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey),
                                   ),
-                                  child: Text(
-                                    'New',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 11,
-                                      color: Colors.teal.shade700,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
-                      trailing: Icon(
-                        isRead
-                            ? Icons.check_circle
-                            : Icons.circle_outlined,
-                        color: isRead
-                            ? Colors.green
-                            : Colors.orange,
-                      ),
-                      onTap: () {
-                        // Mark as read when tapped
-                        if (!isRead) {
-                          lectureProvider.markNotificationAsRead(id);
-                        }
-                      },
-                    ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                            onPressed: () => _deleteNotification(notif.id),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-          );
-        },
-      ),
+                ),
     );
   }
 }

@@ -200,7 +200,7 @@ class _ScheduleReminderScreenState extends State<ScheduleReminderScreen> {
             filled: true,
             fillColor: Colors.grey[50],
             prefixIcon:
-                Icon(icon, color: Colors.teal.shade600, size: 20),
+                Icon(icon, color: Colors.deepPurple.shade600, size: 20),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -212,7 +212,7 @@ class _ScheduleReminderScreenState extends State<ScheduleReminderScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  BorderSide(color: Colors.teal.shade400, width: 2),
+                  BorderSide(color: Colors.deepPurple.shade400, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 14),
@@ -242,7 +242,7 @@ class _ScheduleReminderScreenState extends State<ScheduleReminderScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade600,
+        backgroundColor: Colors.deepPurple.shade600,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           'Schedule Reminder',
@@ -264,8 +264,8 @@ class _ScheduleReminderScreenState extends State<ScheduleReminderScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.teal.shade600,
-                    Colors.teal.shade400,
+                    Colors.deepPurple.shade600,
+                    Colors.deepPurple.shade400,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -331,10 +331,10 @@ class _ScheduleReminderScreenState extends State<ScheduleReminderScreen> {
                 fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
                 hintText: 'e.g. DBMS, Mathematics, OS...',
                 hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey),
-                prefixIcon: Icon(Icons.subject, color: Colors.teal.shade600, size: 20),
+                prefixIcon: Icon(Icons.subject, color: Colors.deepPurple.shade600, size: 20),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade400)),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade400)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.teal.shade400, width: 2)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.deepPurple.shade400, width: 2)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 counterStyle: GoogleFonts.poppins(fontSize: 10, color: Colors.grey),
               ),

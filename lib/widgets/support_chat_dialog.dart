@@ -70,7 +70,7 @@ class _SupportChatDialogState extends State<SupportChatDialog> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.support_agent, color: Colors.teal.shade600),
+                    Icon(Icons.support_agent, color: Colors.deepPurple.shade600),
                     const SizedBox(width: 10),
                     Text('The Helper',
                         style: GoogleFonts.poppins(
@@ -99,7 +99,7 @@ class _SupportChatDialogState extends State<SupportChatDialog> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: isUser
-                            ? Colors.teal.shade500
+                            ? Colors.deepPurple.shade500
                             : Colors.grey.shade200,
                         borderRadius: BorderRadius.only(
                           topLeft: const Radius.circular(16),
@@ -138,7 +138,7 @@ class _SupportChatDialogState extends State<SupportChatDialog> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.teal.shade400),
+                        borderSide: BorderSide(color: Colors.deepPurple.shade400),
                       ),
                     ),
                     onSubmitted: (_) => _sendMessage(),
@@ -146,7 +146,7 @@ class _SupportChatDialogState extends State<SupportChatDialog> {
                 ),
                 const SizedBox(width: 8),
                 CircleAvatar(
-                  backgroundColor: Colors.teal.shade600,
+                  backgroundColor: Colors.deepPurple.shade600,
                   child: IconButton(
                     icon: const Icon(Icons.send, color: Colors.white, size: 20),
                     onPressed: _sendMessage,

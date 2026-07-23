@@ -73,12 +73,12 @@ class _CaptchaWidgetState extends State<CaptchaWidget> {
                 width: 52,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.teal.shade50,
+                  color: Colors.deepPurple.shade50,
                   border: Border(left: BorderSide(color: Colors.grey.shade300, width: 1.5)),
                   borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
                 ),
                 child: IconButton(
-                  icon: Icon(Icons.refresh_rounded, color: Colors.teal.shade700, size: 26),
+                  icon: Icon(Icons.refresh_rounded, color: Colors.deepPurple.shade700, size: 26),
                   tooltip: 'Refresh CAPTCHA',
                   onPressed: _generate,
                 ),
@@ -191,7 +191,7 @@ class _CaptchaPainter extends CustomPainter {
   Color _randomColor(Random rnd) {
     // Mostly dark, readable colors — avoid near-white which blends with bg
     final colors = [
-      Colors.teal.shade700,
+      Colors.deepPurple.shade700,
       Colors.indigo.shade600,
       Colors.purple.shade700,
       Colors.red.shade700,

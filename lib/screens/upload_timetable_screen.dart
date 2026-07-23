@@ -175,12 +175,12 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-            prefixIcon: Icon(icon, color: Colors.teal.shade600, size: 20),
+            prefixIcon: Icon(icon, color: Colors.deepPurple.shade600, size: 20),
             hintText: 'Type ${label.replaceAll(' *', '')}...',
             hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade400)),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade400)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.teal.shade400, width: 2)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.deepPurple.shade400, width: 2)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             counterStyle: GoogleFonts.poppins(fontSize: 10, color: Colors.grey),
           ),
@@ -216,7 +216,7 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
             filled: true,
             fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
             prefixIcon:
-                Icon(icon, color: Colors.teal.shade600, size: 20),
+                Icon(icon, color: Colors.deepPurple.shade600, size: 20),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade400),
@@ -228,7 +228,7 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  BorderSide(color: Colors.teal.shade400, width: 2),
+                  BorderSide(color: Colors.deepPurple.shade400, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 14),
@@ -279,7 +279,7 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
             child: Row(
               children: [
                 Icon(Icons.access_time,
-                    color: Colors.teal.shade600, size: 20),
+                    color: Colors.deepPurple.shade600, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   time.isEmpty ? 'Tap to pick time' : time,
@@ -301,7 +301,7 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade600,
+        backgroundColor: Colors.deepPurple.shade600,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           'Upload Timetable',
