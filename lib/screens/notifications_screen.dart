@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../models/app_notification_model.dart';
+import '../services/api_service.dart';
 import '../services/notification_service_local.dart';
 
 bool canDeleteNotification(String? role) {
@@ -36,17 +37,60 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final user = auth.user;
 
     if (user != null) {
-      final list = await NotificationServiceLocal.getNotificationsForUser(
+      // Fetch from server API
+      List<AppNotification> apiNotifications = [];
+      try {
+        if (user.role == 'student') {
+          final data = await ApiService.getStudentNotifications();
+          apiNotifications = data.map((json) {
+            final map = json as Map<String, dynamic>;
+            return AppNotification(
+              id: map['id'] ?? '',
+              title: map['title'] ?? '',
+              message: map['message'] ?? '',
+              targetRole: 'student',
+              targetDivision: 'all',
+              senderId: map['studentId'] ?? '',
+              senderName: 'System',
+              createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
+              isRead: map['isRead'] == 1 || map['isRead'] == true,
+            );
+          }).toList();
+        } else if (user.role == 'teacher') {
+          final data = await ApiService.getTeacherNotifications();
+          apiNotifications = data.map((json) {
+            final map = json as Map<String, dynamic>;
+            return AppNotification(
+              id: map['id'] ?? '',
+              title: map['title'] ?? '',
+              message: map['message'] ?? '',
+              targetRole: 'teacher',
+              targetDivision: map['className'] ?? 'all',
+              senderId: map['studentId'] ?? '',
+              senderName: 'System',
+              createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
+              isRead: map['isRead'] == 1 || map['isRead'] == true,
+            );
+          }).toList();
+        }
+      } catch (_) {}
+
+      // Also get local notifications as fallback
+      final localList = await NotificationServiceLocal.getNotificationsForUser(
         role: user.role,
         division: user.className ?? 'all',
         userId: user.id,
         department: user.college ?? 'all',
       );
+
+      // Merge: use API notifications, fall back to local if API returns nothing
+      final merged = apiNotifications.isNotEmpty ? apiNotifications : localList;
+
       setState(() {
-        _notifications = list;
+        _notifications = merged;
         _isLoading = false;
       });
-      // Mark all read for this user
+
       await NotificationServiceLocal.markAllAsRead(
         user.role,
         user.className ?? 'all',
@@ -58,7 +102,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  void _deleteNotification(String id) async {
+  Future<void> _deleteNotification(String id) async {
+    // Delete from server
+    try {
+      await ApiService.deleteNotification(id);
+    } catch (_) {}
     await NotificationServiceLocal.deleteNotification(id);
     _loadNotifications();
   }

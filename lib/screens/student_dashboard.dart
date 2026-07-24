@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
+import '../providers/lecture_provider.dart';
 import '../models/timetable_entry_model.dart';
 import '../models/time_slot_model.dart';
 import '../services/timetable_service.dart';
@@ -33,18 +34,42 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final user = authProvider.user;
 
     if (user != null) {
-      final allEntries = await TimetableService.getAllEntries();
+      // Fetch from server API
+      final lectureProvider = Provider.of<LectureProvider>(context, listen: false);
+      try {
+        await lectureProvider.getTimetable(user.className ?? '');
+      } catch (_) {}
+
+      // Convert API timetable entries to display format
+      final apiEntries = lectureProvider.timetableEntries;
+      final displayEntries = apiEntries.map((t) => TimetableEntry(
+        id: t.id,
+        division: t.section.isNotEmpty ? '${t.className}-${t.section}' : t.className,
+        day: t.day,
+        slotId: '',
+        subjectName: t.subjectName,
+        facultyId: '',
+        facultyName: t.teacherName,
+        roomNumber: t.roomNumber,
+        entryType: EntryType.theory,
+        createdAt: t.createdAt,
+        createdBy: 'server',
+      )).toList();
+
+      // Also get local entries for fallback
+      final localEntries = await TimetableService.getAllEntries();
+
       final notifications = await NotificationServiceLocal.getNotificationsForUser(
         role: user.role,
         division: user.className ?? 'all',
         userId: user.id,
         department: user.college ?? 'all',
       );
-      // Filter for this student's class (division) e.g. "SE-A"
+
       String normalize(String s) => s.replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '').toLowerCase();
       final normClass = normalize(user.className ?? '');
       setState(() {
-        _classEntries = allEntries.where((e) {
+        _classEntries = [...displayEntries, ...localEntries].where((e) {
           final matchesClass = normalize(e.division) == normClass;
           final matchesDay = e.day.toLowerCase() == _selectedDay.toLowerCase();
           return matchesClass && matchesDay;
