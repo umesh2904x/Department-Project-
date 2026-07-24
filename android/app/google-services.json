@@ -1,13 +1,14 @@
 {
   "project_info": {
-    "project_number": "420994380464",
-    "project_id": "time-management-e388d",
-    "storage_bucket": "time-management-e388d.firebasestorage.app"
+    "project_number": "156005404177",
+    "firebase_url": "https://department-73331-default-rtdb.firebaseio.com",
+    "project_id": "department-73331",
+    "storage_bucket": "department-73331.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:420994380464:android:4dcd01a8c7607b8fa84175",
+        "mobilesdk_app_id": "1:156005404177:android:f9b04ecd7097791b626bb0",
         "android_client_info": {
           "package_name": "com.example.educational_timetable_app"
         }
@@ -15,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCyxwDUnN5o2UR2K06SeE3BEHftf1Cjnic"
+          "current_key": "AIzaSyCmQ2xOcaW1uLAOw_MTYVu8b1ZW3LocXXg"
         }
       ],
       "services": {

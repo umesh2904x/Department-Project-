@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -193,11 +193,11 @@ class ReminderService {
         if (token != null) {
           ApiService.setToken(token);
           await ApiService.updateFcmToken(fcmToken);
-          print("📱 FCM Token synced successfully via ReminderService: $fcmToken");
+          debugPrint("📱 FCM Token synced successfully via ReminderService: $fcmToken");
         }
       }
     } catch (e) {
-      print("❌ Error syncing FCM token in ReminderService: $e");
+      debugPrint("❌ Error syncing FCM token in ReminderService: $e");
     }
   }
 }

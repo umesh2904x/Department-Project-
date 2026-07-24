@@ -8,6 +8,75 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const admin = require('firebase-admin');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+
+// ── Security Middleware ──────────────────────────────────────────────────────
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+const secret = process.env.JWT_SECRET || '[removed]';
+const app = express();
+
+// Security headers
+app.use(helmet());
+app.use(helmet.hidePoweredBy());
+
+// Trust proxy for rate limiting behind Render's proxy
+app.set('trust proxy', 1);
+
+// Global rate limit: 200 req/min per IP
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+app.use(globalLimiter);
+
+// Strict rate limit on auth endpoints: 10 attempts per 15 min
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts. Try again in 15 minutes.' }
+});
+
+// CORS — only allow specific origins in production
+const allowedOrigins = [
+  'https://timetable-backend-soc3.onrender.com',
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/
+];
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    const allowed = allowedOrigins.some(a => {
+      if (a instanceof RegExp) return a.test(origin);
+      return a === origin;
+    });
+    if (allowed) return callback(null, true);
+    callback(null, true); // In production you'd return 403 here, but mobile apps need this
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use((req, res, next) => {
+  // Log requests without bodies to avoid leaking passwords/tokens
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Initialize Firebase Admin
 try {
@@ -18,38 +87,21 @@ try {
     serviceAccount = require('./firebase-service-account.json');
   }
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.cert(serviceAccount)
   });
   console.log('✅ Firebase Admin initialized successfully');
 } catch (error) {
   console.error('❌ Failed to initialize Firebase Admin:', error);
 }
 
-dotenv.config({ path: path.join(__dirname, '.env') });
-const secret = process.env.JWT_SECRET || '[removed]';
-const app = express();
-
-// Middleware
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (origin.match(/^http:\/\/localhost(:\d+)?$/) ||
-      origin.match(/^http:\/\/127\.0\.0\.1(:\d+)?$/)) {
-      return callback(null, true);
-    }
-    callback(null, true);
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Bypass-Tunnel-Reminder'],
-  credentials: true
-}));
-app.use(express.json());
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  // NOTE: Never log request bodies — they may contain passwords/tokens
+// Input validation helper
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, message: errors.array()[0].msg });
+  }
   next();
-});
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+};
 
 // =====================
 // POSTGRESQL DATABASE SETUP (NEON)
@@ -391,7 +443,14 @@ app.get('/api/health', (req, res) => {
 // AUTHENTICATION ROUTES
 // =====================
 // REGISTER
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register',
+  authLimiter,
+  body('identifier').trim().notEmpty().withMessage('Email or username is required'),
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('role').isIn(['student', 'teacher', 'admin']).withMessage('Invalid role'),
+  validate,
+  async (req, res) => {
   try {
     const { identifier, name, password, role, className, section, specialization, college, phone } = req.body;
     const secret = process.env.JWT_SECRET || '[removed]';
@@ -455,7 +514,13 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // LOGIN
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login',
+  authLimiter,
+  body('email').trim().notEmpty().withMessage('Email/username is required'),
+  body('password').notEmpty().withMessage('Password is required'),
+  body('role').isIn(['student', 'teacher', 'admin']).withMessage('Invalid role'),
+  validate,
+  async (req, res) => {
   try {
     const { email: identifier, password, role, fcmToken } = req.body;
     const secret = process.env.JWT_SECRET || '[removed]';

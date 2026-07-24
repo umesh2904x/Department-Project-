@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import '../models/lecture_model.dart';
@@ -37,7 +38,7 @@ class ApiService {
         try {
           fcmToken = await FirebaseMessaging.instance.getToken();
         } catch (e) {
-          print('Error getting FCM token: $e');
+          debugPrint('Error getting FCM token: $e');
         }
       }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/faculty_service.dart';
 import '../../services/timetable_service.dart';
 import '../../services/notification_service_local.dart';
 import '../../models/timetable_entry_model.dart';
@@ -110,7 +109,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Colors.deepPurple.shade300;
 
     return Scaffold(

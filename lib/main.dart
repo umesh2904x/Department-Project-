@@ -17,15 +17,15 @@ import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
+import 'firebase_options.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (!kIsWeb) {
-    await Firebase.initializeApp();
-    print("Handling a background message: ${message.messageId}");
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+    debugPrint("Handling a background message: ${message.messageId}");
   }
 }
 
@@ -37,7 +37,8 @@ void main() async {
   // Initialize Firebase if applicable
   try {
     if (!kIsWeb) {
-      await Firebase.initializeApp();
+await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
       await FirebaseMessaging.instance.requestPermission(
         alert: true,
@@ -46,7 +47,7 @@ void main() async {
       );
     }
   } catch (e) {
-    print("Firebase initialization skipped: $e");
+    debugPrint("Firebase initialization skipped: $e");
   }
 
   // Initialize local notifications
