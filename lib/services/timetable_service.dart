@@ -4,6 +4,7 @@ import '../models/timetable_entry_model.dart';
 import '../models/time_slot_model.dart';
 import '../models/faculty_model.dart';
 import 'faculty_service.dart';
+import 'api_service.dart';
 
 class TimetableService {
   static const String _key = 'timetable_entries';

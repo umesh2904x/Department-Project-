@@ -2240,3 +2240,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT} (Available to all devices)`);
   console.log('📡 Ready for requests!');
 });
+
+// ── Keep-Alive: Ping self every 10 min to prevent Render from sleeping ──────
+const BASE_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+setInterval(() => {
+  fetch(`${BASE_URL}/health`)
+    .then(r => console.log(`💓 Keep-alive ping: ${r.status}`))
+    .catch(e => console.log(`💔 Keep-alive failed: ${e.message}`));
+}, 10 * 60 * 1000);
+console.log('⏰ Keep-alive every 10 minutes active');

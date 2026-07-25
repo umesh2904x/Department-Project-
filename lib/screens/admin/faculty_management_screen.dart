@@ -50,36 +50,8 @@ class _FacultyManagementScreenState extends State<FacultyManagementScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     if (!auth.isLoggedIn || auth.user?.role != 'admin') {
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.gpp_bad, size: 80, color: Colors.redAccent),
-                const SizedBox(height: 20),
-                Text(
-                  'Access Denied',
-                  style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'You do not have permission to access the Faculty Management screen.',
-                  style: GoogleFonts.poppins(color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  },
-                  child: const Text('Back to Login'),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
