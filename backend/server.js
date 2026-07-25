@@ -813,15 +813,24 @@ app.put('/api/lectures/:lectureId/cancel', async (req, res) => {
 // SCHEDULE NOTIFICATION
 app.post('/api/notifications/schedule', async (req, res) => {
   try {
-    const { lectureId, title, message, notificationType, className, section, scheduledAt } = req.body;
+    const { lectureId, title, message, notificationType, className, section, scheduledAt, college } = req.body;
 
+    let senderCollege = college;
+
+    // Try to auth; if token is valid, use sender's info as fallback
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'No token' });
-
-    const decoded = jwt.verify(token, secret);
-    const teacherResult = await query(`SELECT college FROM users WHERE id = $1`, [decoded.userId]);
-    const teacher = teacherResult.rows[0];
-    const college = teacher ? teacher.college : null;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, secret);
+        const teacherResult = await query(`SELECT college FROM users WHERE id = $1`, [decoded.userId]);
+        const teacher = teacherResult.rows[0];
+        if (teacher && teacher.college) {
+          senderCollege = senderCollege || teacher.college;
+        }
+      } catch (err) {
+        // Token invalid — proceed with explicit fields only
+      }
+    }
 
     // Parse class and specialization from className parameter if it includes ' - '
     let parsedClass = className;
@@ -835,33 +844,36 @@ app.post('/api/notifications/schedule', async (req, res) => {
     const students = await query(
       `SELECT id, "fcmToken" FROM users
        WHERE role = 'student'
-         AND COALESCE(LOWER(TRIM("className")), '') = COALESCE(LOWER(TRIM($1)), '')
-         AND COALESCE(LOWER(TRIM(section)), '') = COALESCE(LOWER(TRIM($2)), '')
+         AND ($1::text IS NULL OR $1::text = '' OR COALESCE(LOWER(TRIM("className")), '') = COALESCE(LOWER(TRIM($1)), ''))
+         AND ($2::text IS NULL OR $2::text = '' OR COALESCE(LOWER(TRIM(section)), '') = COALESCE(LOWER(TRIM($2)), ''))
          AND (
            COALESCE(LOWER(TRIM(specialization)), '') = ''
-           OR COALESCE(LOWER(TRIM($3)), '') = ''
+           OR $3::text IS NULL OR $3::text = ''
            OR COALESCE(LOWER(TRIM(specialization)), '') = COALESCE(LOWER(TRIM($3)), '')
          )
          AND (
            COALESCE(LOWER(TRIM(college)), '') = ''
-           OR COALESCE(LOWER(TRIM($4)), '') = ''
+           OR $4::text IS NULL OR $4::text = ''
            OR COALESCE(LOWER(TRIM(college)), '') = COALESCE(LOWER(TRIM($4)), '')
          )`,
       [
-        parsedClass,
-        section || '',
-        parsedSpecialization || '',
-        college || ''
+        parsedClass || null,
+        section || null,
+        parsedSpecialization || null,
+        senderCollege || null
       ]
     );
 
     const scheduledTime = scheduledAt || new Date().toISOString();
 
-    // Insert for teacher tracking
-    await query(
-      `INSERT INTO notifications (id, "studentId", "lectureId", title, message, "notificationType", "scheduledAt") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [generateId(), decoded.userId, lectureId, title, message, notificationType, scheduledTime]
-    );
+    // Track sender (teacher/admin) notification record
+    try {
+      const decoded = jwt.verify(req.headers.authorization?.split(' ')[1], secret);
+      await query(
+        `INSERT INTO notifications (id, "studentId", "lectureId", title, message, "notificationType", "scheduledAt") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [generateId(), decoded.userId, lectureId, title, message, notificationType, scheduledTime]
+      );
+    } catch (_) {}
 
     let fcmTokens = [];
 

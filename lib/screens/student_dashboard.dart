@@ -30,54 +30,59 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Future<void> _loadStudentSchedule() async {
     setState(() => _isLoading = true);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
 
-    if (user != null) {
-      // Fetch from server API
-      final lectureProvider = Provider.of<LectureProvider>(context, listen: false);
-      try {
-        await lectureProvider.getTimetable(user.className ?? '');
-      } catch (_) {}
+      if (user != null) {
+        // Fetch from server API
+        final lectureProvider = Provider.of<LectureProvider>(context, listen: false);
+        try {
+          await lectureProvider.getTimetable(user.className ?? '');
+        } catch (_) {}
 
-      // Convert API timetable entries to display format
-      final apiEntries = lectureProvider.timetableEntries;
-      final displayEntries = apiEntries.map((t) => TimetableEntry(
-        id: t.id,
-        division: t.section.isNotEmpty ? '${t.className}-${t.section}' : t.className,
-        day: t.day,
-        slotId: '',
-        subjectName: t.subjectName,
-        facultyId: '',
-        facultyName: t.teacherName,
-        roomNumber: t.roomNumber,
-        entryType: EntryType.theory,
-        createdAt: t.createdAt,
-        createdBy: 'server',
-      )).toList();
+        // Convert API timetable entries to display format
+        final apiEntries = lectureProvider.timetableEntries;
+        final displayEntries = apiEntries.map((t) => TimetableEntry(
+          id: t.id,
+          division: t.section.isNotEmpty ? '${t.className}-${t.section}' : t.className,
+          day: t.day,
+          slotId: '',
+          subjectName: t.subjectName,
+          facultyId: '',
+          facultyName: t.teacherName,
+          roomNumber: t.roomNumber,
+          entryType: EntryType.theory,
+          createdAt: t.createdAt,
+          createdBy: 'server',
+        )).toList();
 
-      // Also get local entries for fallback
-      final localEntries = await TimetableService.getAllEntries();
+        // Also get local entries for fallback
+        final localEntries = await TimetableService.getAllEntries();
 
-      final notifications = await NotificationServiceLocal.getNotificationsForUser(
-        role: user.role,
-        division: user.className ?? 'all',
-        userId: user.id,
-        department: user.college ?? 'all',
-      );
+        final notifications = await NotificationServiceLocal.getNotificationsForUser(
+          role: user.role,
+          division: user.className ?? 'all',
+          userId: user.id,
+          department: user.college ?? 'all',
+        );
 
-      String normalize(String s) => s.replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '').toLowerCase();
-      final normClass = normalize(user.className ?? '');
-      setState(() {
-        _classEntries = [...displayEntries, ...localEntries].where((e) {
-          final matchesClass = normalize(e.division) == normClass;
-          final matchesDay = e.day.toLowerCase() == _selectedDay.toLowerCase();
-          return matchesClass && matchesDay;
-        }).toList();
-        _unreadNotifications = notifications.where((n) => !n.isRead).length;
-        _isLoading = false;
-      });
-    } else {
+        String normalize(String s) => s.replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '').toLowerCase();
+        final normClass = normalize(user.className ?? '');
+        setState(() {
+          _classEntries = [...displayEntries, ...localEntries].where((e) {
+            final matchesClass = normalize(e.division) == normClass;
+            final matchesDay = e.day.toLowerCase() == _selectedDay.toLowerCase();
+            return matchesClass && matchesDay;
+          }).toList();
+          _unreadNotifications = notifications.where((n) => !n.isRead).length;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('Error loading student schedule: $e');
       setState(() => _isLoading = false);
     }
   }

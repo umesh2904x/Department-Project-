@@ -22,7 +22,7 @@ class SendNotificationScreen extends StatefulWidget {
 class _SendNotificationScreenState extends State<SendNotificationScreen> {
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
-  String _selectedTargetRole = 'class'; // 'all', 'teachers', 'teacher', 'class'
+  String _selectedTargetRole = 'class'; // 'all', 'all_students', 'teachers', 'teacher', 'class'
   String _selectedDivision = 'SE-A';
   String _selectedTeacherId = '';
   List<FacultyMember> _facultyList = [];
@@ -116,9 +116,9 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
       } else if (_selectedTargetRole == 'teacher_and_class') {
         targetRole = 'teacher_and_class';
         targetDivision = '$_selectedDivision||$_selectedTeacherId';
-      } else if (_selectedTargetRole == 'department') {
-        targetRole = 'department';
-        targetDivision = user.college?.trim() ?? 'all';
+      } else if (_selectedTargetRole == 'all_students') {
+        targetRole = 'all_students';
+        targetDivision = user.college?.trim() ?? 'CSE (Data Science) Department';
       } else if (_selectedTargetRole == 'teachers') {
         targetRole = 'teacher';
         targetDivision = 'all';
@@ -150,9 +150,9 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
         title: title,
         message: message,
         notificationType: targetRole,
-        className: (targetRole == 'student' || _selectedTargetRole == 'class') ? _selectedDivision : '',
+        className: (_selectedTargetRole == 'class' || _selectedTargetRole == 'teacher_and_class') ? _selectedDivision : '',
         section: '',
-        college: targetRole == 'department' ? targetDivision : null,
+        college: (_selectedTargetRole == 'all_students' || _selectedTargetRole == 'all') ? targetDivision : null,
         scheduledAt: DateTime.now().toIso8601String(),
       ).then((apiResp) {
         if (apiResp['success'] == true) {
@@ -286,14 +286,14 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                   items: (isAdmin)
                       ? const [
                           DropdownMenuItem(value: 'all', child: Text('All Users')),
+                          DropdownMenuItem(value: 'all_students', child: Text('All Students')),
                           DropdownMenuItem(value: 'teachers', child: Text('All Teachers')),
-                          DropdownMenuItem(value: 'department', child: Text('Specific Department')),
                           DropdownMenuItem(value: 'teacher', child: Text('Specific Teacher')),
                           DropdownMenuItem(value: 'class', child: Text('Specific Class')),
                           DropdownMenuItem(value: 'teacher_and_class', child: Text('Specific Class & Teacher')),
                         ]
                       : const [
-                          DropdownMenuItem(value: 'department', child: Text('Specific Department')),
+                          DropdownMenuItem(value: 'all_students', child: Text('All Students')),
                           DropdownMenuItem(value: 'teacher', child: Text('Specific Teacher')),
                           DropdownMenuItem(value: 'class', child: Text('Specific Class')),
                         ],
