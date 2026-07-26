@@ -1070,19 +1070,15 @@ app.get('/api/notifications/teacher', async (req, res) => {
     if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
     const decoded = jwt.verify(token, secret);
-    const userRow = await query(`SELECT username FROM users WHERE id = $1`, [decoded.userId]);
-    const username = userRow.rows[0]?.username || '';
-    const mappedFacId = Object.keys(facMap).find(k => facMap[k] === username.toLowerCase()) || '';
 
     const rows = await query(
       `SELECT n.*, l."subjectName", l."className", l.section 
        FROM notifications n
        LEFT JOIN lectures l ON n."lectureId" = l.id
        WHERE n."studentId" = $1
-          OR ( $2 <> '' AND LOWER(n."studentId") = LOWER($2) )
-          OR ( $3 <> '' AND LOWER(n."studentId") = LOWER($3) )
+          OR n."senderId" = $1
        ORDER BY n."scheduledAt" DESC`,
-      [decoded.userId, username, mappedFacId]
+      [decoded.userId]
     );
 
     res.json(rows.rows);
@@ -1102,7 +1098,7 @@ app.delete('/api/notifications/:id', async (req, res) => {
     const { id } = req.params;
 
     const rowResult = await query(
-      `SELECT "lectureId", "studentId", title, message, "senderRole" FROM notifications WHERE id = $1`,
+      `SELECT "lectureId", "studentId", "senderId", "senderRole", title, message FROM notifications WHERE id = $1`,
       [id]
     );
     const row = rowResult.rows[0];
@@ -1112,27 +1108,32 @@ app.delete('/api/notifications/:id', async (req, res) => {
     const userResult = await query(`SELECT role FROM users WHERE id = $1`, [decoded.userId]);
     const requesterRole = userResult.rows[0]?.role;
 
-    // Teachers cannot delete notifications sent by admin
-    const senderRole = row.senderRole || 'admin'; // Treat NULL as admin for safety
-    if (requesterRole === 'teacher' && senderRole === 'admin') {
-      return res.status(403).json({ success: false, message: 'Teachers are not allowed to delete admin notifications' });
+    // Admin can delete any notification
+    if (requesterRole === 'admin') {
+      if (row.lectureId) {
+        await query(`DELETE FROM notifications WHERE "lectureId" = $1`, [row.lectureId]);
+        return res.json({ success: true, message: 'Notification cancelled for everyone' });
+      }
+      await query(`DELETE FROM notifications WHERE id = $1`, [id]);
+      return res.json({ success: true, message: 'Notification deleted' });
     }
 
-    // Verify the requesting user owns this notification or is the teacher who sent it
-    if (row.studentId !== decoded.userId) {
+    // Teachers cannot delete notifications sent by admin
+    const senderRole = row.senderRole || 'system';
+    if (requesterRole === 'teacher' && senderRole === 'admin') {
+      return res.status(403).json({ success: false, message: 'Teachers cannot delete admin notifications' });
+    }
+
+    // Verify ownership: user must be recipient (studentId) OR sender (senderId)
+    const isRecipient = row.studentId === decoded.userId;
+    const isSender = row.senderId && row.senderId === decoded.userId;
+    if (!isRecipient && !isSender) {
       return res.status(403).json({ success: false, message: 'You can only delete your own notifications' });
     }
 
-    if (row.lectureId) {
-      const result = await query(
-        `DELETE FROM notifications WHERE "lectureId" = $1 OR (title = $2 AND message = $3)`,
-        [row.lectureId, row.title, row.message]
-      );
-      res.json({ success: true, message: `Notification cancelled for everyone (${result.rowCount} removed)` });
-    } else {
-      await query(`DELETE FROM notifications WHERE id = $1`, [id]);
-      res.json({ success: true, message: 'Notification deleted' });
-    }
+    // Only delete this user's copy, not cascade to everyone
+    await query(`DELETE FROM notifications WHERE id = $1`, [id]);
+    res.json({ success: true, message: 'Notification deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1148,6 +1149,30 @@ app.get('/api/notifications/student', async (req, res) => {
     const notifications = await query(
       `SELECT * FROM notifications WHERE "studentId" = $1 ORDER BY "scheduledAt" DESC`,
       [decoded.userId]
+    );
+
+    res.json(notifications.rows);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET ALL NOTIFICATIONS (for admin)
+app.get('/api/notifications/all', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+    const decoded = jwt.verify(token, secret);
+    const userResult = await query(`SELECT role FROM users WHERE id = $1`, [decoded.userId]);
+    const requesterRole = userResult.rows[0]?.role;
+
+    if (requesterRole !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only admins can view all notifications' });
+    }
+
+    const notifications = await query(
+      `SELECT * FROM notifications ORDER BY "scheduledAt" DESC`
     );
 
     res.json(notifications.rows);

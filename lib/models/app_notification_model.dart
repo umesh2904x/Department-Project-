@@ -28,8 +28,7 @@ class AppNotification {
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'title': message, // Oops, keep this standard or mapping correctly
-        'titleField': title, // Let's keep it direct
+        'title': title,
         'message': message,
         'targetRole': targetRole,
         'targetDivision': targetDivision,
@@ -42,7 +41,7 @@ class AppNotification {
 
   factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
         id: json['id'] ?? '',
-        title: json['titleField'] ?? json['title'] ?? '',
+        title: json['title'] ?? '',
         message: json['message'] ?? '',
         targetRole: json['targetRole'] ?? 'all',
         targetDivision: json['targetDivision'] ?? 'all',

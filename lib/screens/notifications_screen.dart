@@ -44,10 +44,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final user = auth.user;
 
     if (user != null) {
-      // Fetch from server API
       List<AppNotification> apiNotifications = [];
       try {
-        if (user.role == 'student') {
+        if (user.role == 'admin') {
+          final data = await ApiService.getAllNotifications();
+          apiNotifications = data.map((json) {
+            final map = json as Map<String, dynamic>;
+            return AppNotification(
+              id: map['id'] ?? '',
+              title: map['title'] ?? '',
+              message: map['message'] ?? '',
+              targetRole: map['notificationType'] ?? 'all',
+              targetDivision: map['className'] ?? 'all',
+              senderId: map['senderId'] ?? '',
+              senderName: map['senderName'] ?? 'System',
+              senderRole: map['senderRole'] ?? 'system',
+              createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
+              isRead: map['isRead'] == 1 || map['isRead'] == true,
+            );
+          }).toList();
+        } else if (user.role == 'student') {
           final data = await ApiService.getStudentNotifications();
           apiNotifications = data.map((json) {
             final map = json as Map<String, dynamic>;
@@ -84,7 +100,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }
       } catch (_) {}
 
-      // Also get local notifications as fallback
       final localList = await NotificationServiceLocal.getNotificationsForUser(
         role: user.role,
         division: user.className ?? 'all',
@@ -92,8 +107,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         department: user.college ?? 'all',
       );
 
-      // Merge: use API notifications, fall back to local if API returns nothing
-      final merged = apiNotifications.isNotEmpty ? apiNotifications : localList;
+      // Merge API + local with dedup by id — API takes precedence for same id
+      final apiIds = apiNotifications.map((n) => n.id).toSet();
+      final merged = [
+        ...apiNotifications,
+        ...localList.where((n) => !apiIds.contains(n.id)),
+      ];
 
       setState(() {
         _notifications = merged;
@@ -112,10 +131,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _deleteNotification(String id) async {
-    // Delete from server
     try {
-      await ApiService.deleteNotification(id);
-    } catch (_) {}
+      final res = await ApiService.deleteNotification(id);
+      if (res['success'] != true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message'] ?? 'Failed to delete'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+        return;
+      }
+    } catch (_) {
+      // Server unreachable — delete locally only
+    }
     await NotificationServiceLocal.deleteNotification(id);
     _loadNotifications();
   }

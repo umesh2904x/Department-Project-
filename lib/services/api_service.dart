@@ -339,6 +339,21 @@ class ApiService {
     }
   }
 
+  static Future<List<dynamic>> getAllNotifications() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/notifications/all'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 60));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   static Future<Map<String, dynamic>> markNotificationAsRead(String notificationId) async {
     try {
       final response = await http.put(
