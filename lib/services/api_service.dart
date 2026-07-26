@@ -51,7 +51,7 @@ class ApiService {
           'role': role,
           'fcmToken': fcmToken,
         }),
-      ).timeout(const Duration(seconds: 60));
+      ).timeout(const Duration(seconds: 12));
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
@@ -314,7 +314,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/api/notifications/student'),
         headers: _headers,
-      ).timeout(const Duration(seconds: 60));
+      ).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -329,7 +329,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/api/notifications/teacher'),
         headers: _headers,
-      ).timeout(const Duration(seconds: 60));
+      ).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -344,7 +344,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/api/notifications/all'),
         headers: _headers,
-      ).timeout(const Duration(seconds: 60));
+      ).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }

@@ -44,8 +44,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final user = auth.user;
 
     if (user != null) {
-      List<AppNotification> apiNotifications = [];
+      // Load local notifications first (instant — SharedPreferences)
+      List<AppNotification> localList = await NotificationServiceLocal.getNotificationsForUser(
+        role: user.role,
+        division: user.className ?? 'all',
+        userId: user.id,
+        department: user.college ?? 'all',
+      );
+
+      setState(() {
+        _notifications = localList;
+        _isLoading = false;
+      });
+
+      // Fetch from server API in background (short timeout)
       try {
+        List<AppNotification> apiNotifications = [];
         if (user.role == 'admin') {
           final data = await ApiService.getAllNotifications();
           apiNotifications = data.map((json) {
@@ -98,26 +112,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             );
           }).toList();
         }
-      } catch (_) {}
 
-      final localList = await NotificationServiceLocal.getNotificationsForUser(
-        role: user.role,
-        division: user.className ?? 'all',
-        userId: user.id,
-        department: user.college ?? 'all',
-      );
-
-      // Merge API + local with dedup by id — API takes precedence for same id
-      final apiIds = apiNotifications.map((n) => n.id).toSet();
-      final merged = [
-        ...apiNotifications,
-        ...localList.where((n) => !apiIds.contains(n.id)),
-      ];
-
-      setState(() {
-        _notifications = merged;
-        _isLoading = false;
-      });
+        if (apiNotifications.isNotEmpty) {
+          final apiIds = apiNotifications.map((n) => n.id).toSet();
+          setState(() {
+            _notifications = [
+              ...apiNotifications,
+              ...localList.where((n) => !apiIds.contains(n.id)),
+            ];
+          });
+        }
+      } catch (_) {
+        // API failed — local data already displayed
+      }
 
       await NotificationServiceLocal.markAllAsRead(
         user.role,
@@ -131,24 +138,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _deleteNotification(String id) async {
+    bool deletedOnServer = false;
     try {
       final res = await ApiService.deleteNotification(id);
-      if (res['success'] != true) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(res['message'] ?? 'Failed to delete'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
+      if (res['success'] == true) {
+        deletedOnServer = true;
+      } else {
+        // If server says "not found", it's a local-only notification — still delete locally
+        final msg = (res['message'] ?? '').toLowerCase();
+        if (msg.contains('not found')) {
+          deletedOnServer = true; // Nothing to delete on server
         }
-        return;
       }
     } catch (_) {
       // Server unreachable — delete locally only
+      deletedOnServer = true;
     }
-    await NotificationServiceLocal.deleteNotification(id);
-    _loadNotifications();
+
+    if (deletedOnServer) {
+      await NotificationServiceLocal.deleteNotification(id);
+      _loadNotifications();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete. Check connection.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   @override
