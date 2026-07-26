@@ -137,6 +137,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
         senderName: user.name,
         senderRole: user.role,
         createdAt: DateTime.now().toString(),
+        isRead: false,
       );
 
       // Persist locally immediately

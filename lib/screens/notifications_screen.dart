@@ -40,99 +40,106 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _loadNotifications() async {
     setState(() => _isLoading = true);
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final user = auth.user;
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final user = auth.user;
 
-    if (user != null) {
-      // Load local notifications first (instant — SharedPreferences)
-      List<AppNotification> localList = await NotificationServiceLocal.getNotificationsForUser(
-        role: user.role,
-        division: user.className ?? 'all',
-        userId: user.id,
-        department: user.college ?? 'all',
-      );
-
-      setState(() {
-        _notifications = localList;
-        _isLoading = false;
-      });
-
-      // Fetch from server API in background (short timeout)
-      try {
-        List<AppNotification> apiNotifications = [];
-        if (user.role == 'admin') {
-          final data = await ApiService.getAllNotifications();
-          apiNotifications = data.map((json) {
-            final map = json as Map<String, dynamic>;
-            return AppNotification(
-              id: map['id'] ?? '',
-              title: map['title'] ?? '',
-              message: map['message'] ?? '',
-              targetRole: map['notificationType'] ?? 'all',
-              targetDivision: map['className'] ?? 'all',
-              senderId: map['senderId'] ?? '',
-              senderName: map['senderName'] ?? 'System',
-              senderRole: map['senderRole'] ?? 'system',
-              createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
-              isRead: map['isRead'] == 1 || map['isRead'] == true,
-            );
-          }).toList();
-        } else if (user.role == 'student') {
-          final data = await ApiService.getStudentNotifications();
-          apiNotifications = data.map((json) {
-            final map = json as Map<String, dynamic>;
-            return AppNotification(
-              id: map['id'] ?? '',
-              title: map['title'] ?? '',
-              message: map['message'] ?? '',
-              targetRole: map['notificationType'] ?? 'student',
-              targetDivision: map['className'] ?? 'all',
-              senderId: map['senderId'] ?? '',
-              senderName: map['senderName'] ?? 'System',
-              senderRole: map['senderRole'] ?? 'system',
-              createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
-              isRead: map['isRead'] == 1 || map['isRead'] == true,
-            );
-          }).toList();
-        } else if (user.role == 'teacher') {
-          final data = await ApiService.getTeacherNotifications();
-          apiNotifications = data.map((json) {
-            final map = json as Map<String, dynamic>;
-            return AppNotification(
-              id: map['id'] ?? '',
-              title: map['title'] ?? '',
-              message: map['message'] ?? '',
-              targetRole: map['notificationType'] ?? 'teacher',
-              targetDivision: map['className'] ?? 'all',
-              senderId: map['senderId'] ?? '',
-              senderName: map['senderName'] ?? 'System',
-              senderRole: map['senderRole'] ?? 'system',
-              createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
-              isRead: map['isRead'] == 1 || map['isRead'] == true,
-            );
-          }).toList();
+      if (user != null) {
+        List<AppNotification> localList;
+        try {
+          localList = await NotificationServiceLocal.getNotificationsForUser(
+            role: user.role,
+            division: user.className ?? 'all',
+            userId: user.id,
+            department: user.college ?? 'all',
+          );
+        } catch (_) {
+          localList = await NotificationServiceLocal.getAllNotifications();
         }
 
-        if (apiNotifications.isNotEmpty) {
-          final apiIds = apiNotifications.map((n) => n.id).toSet();
-          setState(() {
-            _notifications = [
-              ...apiNotifications,
-              ...localList.where((n) => !apiIds.contains(n.id)),
-            ];
-          });
+        setState(() {
+          _notifications = localList;
+        });
+
+        // Fetch from server API in background (short timeout)
+        try {
+          List<AppNotification> apiNotifications = [];
+          if (user.role == 'admin') {
+            final data = await ApiService.getAllNotifications();
+            apiNotifications = data.map((json) {
+              final map = json as Map<String, dynamic>;
+              return AppNotification(
+                id: map['id'] ?? '',
+                title: map['title'] ?? '',
+                message: map['message'] ?? '',
+                targetRole: map['notificationType'] ?? 'all',
+                targetDivision: map['className'] ?? 'all',
+                senderId: map['senderId'] ?? '',
+                senderName: map['senderName'] ?? 'System',
+                senderRole: map['senderRole'] ?? 'system',
+                createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
+                isRead: map['isRead'] == 1 || map['isRead'] == true,
+              );
+            }).toList();
+          } else if (user.role == 'student') {
+            final data = await ApiService.getStudentNotifications();
+            apiNotifications = data.map((json) {
+              final map = json as Map<String, dynamic>;
+              return AppNotification(
+                id: map['id'] ?? '',
+                title: map['title'] ?? '',
+                message: map['message'] ?? '',
+                targetRole: map['notificationType'] ?? 'student',
+                targetDivision: map['className'] ?? 'all',
+                senderId: map['senderId'] ?? '',
+                senderName: map['senderName'] ?? 'System',
+                senderRole: map['senderRole'] ?? 'system',
+                createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
+                isRead: map['isRead'] == 1 || map['isRead'] == true,
+              );
+            }).toList();
+          } else if (user.role == 'teacher') {
+            final data = await ApiService.getTeacherNotifications();
+            apiNotifications = data.map((json) {
+              final map = json as Map<String, dynamic>;
+              return AppNotification(
+                id: map['id'] ?? '',
+                title: map['title'] ?? '',
+                message: map['message'] ?? '',
+                targetRole: map['notificationType'] ?? 'teacher',
+                targetDivision: map['className'] ?? 'all',
+                senderId: map['senderId'] ?? '',
+                senderName: map['senderName'] ?? 'System',
+                senderRole: map['senderRole'] ?? 'system',
+                createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
+                isRead: map['isRead'] == 1 || map['isRead'] == true,
+              );
+            }).toList();
+          }
+
+          if (apiNotifications.isNotEmpty) {
+            final apiIds = apiNotifications.map((n) => n.id).toSet();
+            setState(() {
+              _notifications = [
+                ...apiNotifications,
+                ...localList.where((n) => !apiIds.contains(n.id)),
+              ];
+            });
+          }
+        } catch (_) {
+          // API failed — local data already displayed
         }
-      } catch (_) {
-        // API failed — local data already displayed
+
+        await NotificationServiceLocal.markAllAsRead(
+          user.role,
+          user.className ?? 'all',
+          userId: user.id,
+          department: user.college ?? 'all',
+        );
       }
-
-      await NotificationServiceLocal.markAllAsRead(
-        user.role,
-        user.className ?? 'all',
-        userId: user.id,
-        department: user.college ?? 'all',
-      );
-    } else {
+    } catch (_) {
+      // ignore
+    } finally {
       setState(() => _isLoading = false);
     }
   }
