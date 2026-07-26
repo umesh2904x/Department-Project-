@@ -77,6 +77,7 @@ void main() {
       required String section,
       String? college,
       required String scheduledAt,
+      String? targetDivision,
     }) async {
       return {'success': true, 'message': 'ok'};
     };

@@ -239,6 +239,7 @@ class ApiService {
     required String section,
     String? college,
     required String scheduledAt,
+    String? targetDivision,
   }) scheduleNotificationHandler = _defaultScheduleNotification;
 
   static Future<Map<String, dynamic>> scheduleNotification({
@@ -250,6 +251,7 @@ class ApiService {
     required String section,
     String? college,
     required String scheduledAt,
+    String? targetDivision,
   }) async {
     return scheduleNotificationHandler(
       lectureId: lectureId,
@@ -260,6 +262,7 @@ class ApiService {
       section: section,
       college: college,
       scheduledAt: scheduledAt,
+      targetDivision: targetDivision,
     );
   }
 
@@ -272,6 +275,7 @@ class ApiService {
     required String section,
     String? college,
     required String scheduledAt,
+    String? targetDivision,
   }) async {
     try {
       final payload = {
@@ -285,6 +289,9 @@ class ApiService {
       };
       if (college != null) {
         payload['college'] = college;
+      }
+      if (targetDivision != null) {
+        payload['targetDivision'] = targetDivision;
       }
 
       final response = await http.post(

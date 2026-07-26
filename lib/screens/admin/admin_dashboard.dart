@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../services/timetable_service.dart';
 import '../../services/notification_service_local.dart';
 import '../../models/timetable_entry_model.dart';
@@ -31,7 +32,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final today = _getCurrentDayName();
       final entries = await TimetableService.getAllEntries();
-      final notifications = await NotificationServiceLocal.getAllNotifications();
+      
+      int apiCount = 0;
+      try {
+        final teacherNotifs = await ApiService.getTeacherNotifications();
+        final studentNotifs = await ApiService.getStudentNotifications();
+        apiCount = teacherNotifs.length + studentNotifs.length;
+      } catch (_) {}
+
+      final localNotifications = await NotificationServiceLocal.getAllNotifications();
+      final totalNotifsCount = apiCount > 0 ? apiCount : localNotifications.length;
 
       // Today's lectures
       final todayEntries = entries.where((e) => e.day.toLowerCase() == today.toLowerCase()).toList();
@@ -42,7 +52,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       setState(() {
         _totalLecturesToday = todayEntries.length;
         _activeRoomsCount = roomsUsed.length;
-        _notificationsCount = notifications.length;
+        _notificationsCount = totalNotifsCount;
         _todayLectures = todayEntries;
         _isLoading = false;
       });

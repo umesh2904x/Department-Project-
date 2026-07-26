@@ -6,8 +6,15 @@ import '../models/app_notification_model.dart';
 import '../services/api_service.dart';
 import '../services/notification_service_local.dart';
 
-bool canDeleteNotification(String? role) {
-  return role == 'admin' || role == 'teacher';
+bool canDeleteNotification(String? userRole, AppNotification notif, {String userId = ''}) {
+  if (userRole == 'admin') {
+    return true; // Admin can delete anything
+  }
+  if (userRole == 'teacher') {
+    // Teachers can only delete notifications they sent themselves
+    return notif.senderRole == 'teacher' && notif.senderId == userId;
+  }
+  return false; // Students cannot delete any
 }
 
 int countUnreadNotifications(List<AppNotification> notifications) {
@@ -48,10 +55,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               id: map['id'] ?? '',
               title: map['title'] ?? '',
               message: map['message'] ?? '',
-              targetRole: 'student',
-              targetDivision: 'all',
-              senderId: map['studentId'] ?? '',
-              senderName: 'System',
+              targetRole: map['notificationType'] ?? 'student',
+              targetDivision: map['className'] ?? 'all',
+              senderId: map['senderId'] ?? '',
+              senderName: map['senderName'] ?? 'System',
+              senderRole: map['senderRole'] ?? 'system',
               createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
               isRead: map['isRead'] == 1 || map['isRead'] == true,
             );
@@ -64,10 +72,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               id: map['id'] ?? '',
               title: map['title'] ?? '',
               message: map['message'] ?? '',
-              targetRole: 'teacher',
+              targetRole: map['notificationType'] ?? 'teacher',
               targetDivision: map['className'] ?? 'all',
-              senderId: map['studentId'] ?? '',
-              senderName: 'System',
+              senderId: map['senderId'] ?? '',
+              senderName: map['senderName'] ?? 'System',
+              senderRole: map['senderRole'] ?? 'system',
               createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
               isRead: map['isRead'] == 1 || map['isRead'] == true,
             );
@@ -233,7 +242,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               ),
                             ],
                           ),
-                          trailing: canDeleteNotification(currentRole)
+                          trailing: canDeleteNotification(currentRole, notif, userId: auth.user?.id ?? '')
                               ? IconButton(
                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                                   onPressed: () => _deleteNotification(notif.id),

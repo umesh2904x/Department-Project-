@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../models/timetable_entry_model.dart';
 import '../models/time_slot_model.dart';
+import '../services/api_service.dart';
+import '../models/app_notification_model.dart';
 import '../services/timetable_service.dart';
 import '../services/notification_service_local.dart';
 import '../utils/app_constants.dart';
@@ -34,12 +36,36 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
     if (user != null) {
       final allEntries = await TimetableService.getAllEntries();
-      final notifications = await NotificationServiceLocal.getNotificationsForUser(
+      
+      List<AppNotification> apiNotifs = [];
+      try {
+        final data = await ApiService.getTeacherNotifications();
+        apiNotifs = data.map((json) {
+          final map = json as Map<String, dynamic>;
+          return AppNotification(
+            id: map['id'] ?? '',
+            title: map['title'] ?? '',
+            message: map['message'] ?? '',
+            targetRole: map['notificationType'] ?? 'teacher',
+            targetDivision: map['className'] ?? 'all',
+            senderId: map['senderId'] ?? '',
+            senderName: map['senderName'] ?? 'System',
+            senderRole: map['senderRole'] ?? 'system',
+            createdAt: map['createdAt'] ?? map['scheduledAt'] ?? '',
+            isRead: map['isRead'] == 1 || map['isRead'] == true,
+          );
+        }).toList();
+      } catch (_) {}
+
+      final localNotifications = await NotificationServiceLocal.getNotificationsForUser(
         role: user.role,
         division: user.className ?? 'all',
         userId: user.id,
         department: user.college ?? 'all',
       );
+
+      final combinedNotifications = apiNotifs.isNotEmpty ? apiNotifs : localNotifications;
+
       // Filter for this teacher specifically
       setState(() {
         _myEntries = allEntries.where((e) {
@@ -48,7 +74,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           final matchesDay = e.day.toLowerCase() == _selectedDay.toLowerCase();
           return matchesFaculty && matchesDay;
         }).toList();
-        _unreadNotifications = notifications.where((n) => !n.isRead).length;
+        _unreadNotifications = combinedNotifications.where((n) => !n.isRead).length;
         _isLoading = false;
       });
     } else {

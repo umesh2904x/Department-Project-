@@ -9,6 +9,7 @@ class AppNotification {
   final String targetDivision; // e.g. 'SE-A', department name, or 'all'
   final String senderId;
   final String senderName;
+  final String senderRole; // 'admin' | 'teacher' | 'system'
   final String createdAt;
   bool isRead;
 
@@ -20,6 +21,7 @@ class AppNotification {
     this.targetDivision = 'all',
     required this.senderId,
     required this.senderName,
+    this.senderRole = 'system',
     required this.createdAt,
     this.isRead = false,
   });
@@ -33,6 +35,7 @@ class AppNotification {
         'targetDivision': targetDivision,
         'senderId': senderId,
         'senderName': senderName,
+        'senderRole': senderRole,
         'createdAt': createdAt,
         'isRead': isRead,
       };
@@ -45,6 +48,7 @@ class AppNotification {
         targetDivision: json['targetDivision'] ?? 'all',
         senderId: json['senderId'] ?? '',
         senderName: json['senderName'] ?? '',
+        senderRole: json['senderRole'] ?? 'system',
         createdAt: json['createdAt'] ?? '',
         isRead: json['isRead'] ?? false,
       );

@@ -18,6 +18,27 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const secret = process.env.JWT_SECRET || '[removed]';
 const app = express();
 
+const facMap = {
+  'FAC001': 'avani',
+  'FAC002': 'hardiki',
+  'FAC003': 'harsha',
+  'FAC004': 'deepali',
+  'FAC005': 'poonam',
+  'FAC006': 'veena_t',
+  'FAC007': 'veena_g',
+  'FAC008': 'rajashri',
+  'FAC009': 'richa',
+  'FAC010': 'shubhangi',
+  'FAC011': 'kiran',
+  'FAC012': 'sarala',
+  'FAC013': 'avinash',
+  'FAC014': 'swati',
+  'FAC015': 'aswini',
+  'FAC016': 'ujwala',
+  'FAC017': 'pravin',
+  'FAC018': 'priyanka',
+};
+
 // Security headers
 app.use(helmet());
 app.use(helmet.hidePoweredBy());
@@ -238,6 +259,9 @@ async function initDB() {
     await query(`ALTER TABLE exam_schedules ADD COLUMN IF NOT EXISTS college TEXT`);
     await query(`ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS specialization TEXT`);
     await query(`ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS college TEXT`);
+    await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS "senderId" TEXT`);
+    await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS "senderName" TEXT`);
+    await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS "senderRole" TEXT`);
 
     // Online Tests tables
     await query(`
@@ -403,13 +427,66 @@ async function initDB() {
       );
     `);
 
-    console.log('✅ All tables ready');
+    await seedUsers();
+    console.log('✅ All tables and pre-seeded users ready');
     console.log('✅ PostgreSQL (Neon) Connected & Ready!');
   } catch (err) {
     console.error('❌ DB Init Error:', err);
     process.exit(1);
   }
 }
+
+async function seedUsers() {
+  const usersToSeed = [
+    { id: 'admin1', username: 'admin1', name: 'Admin 1', email: 'admin1@college.edu', password: '[removed]', role: 'admin' },
+    { id: 'admin2', username: 'admin2', name: 'Admin 2', email: 'admin2@college.edu', password: '[removed]', role: 'admin' },
+    { id: 'FAC001', username: 'avani', name: 'Prof. Avani', email: 'avani@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC002', username: 'hardiki', name: 'Prof. Hardiki', email: 'hardiki@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC003', username: 'harsha', name: 'Prof. Harsha', email: 'harsha@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC004', username: 'deepali', name: 'Prof. Deepali', email: 'deepali@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC005', username: 'poonam', name: 'Prof. Poonam', email: 'poonam@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC006', username: 'veena_t', name: 'Prof. Veena T.', email: 'veena_t@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC007', username: 'veena_g', name: 'Prof. Veena G.', email: 'veena_g@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC008', username: 'rajashri', name: 'Prof. Rajashri', email: 'rajashri@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC009', username: 'richa', name: 'Prof. Richa', email: 'richa@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC010', username: 'shubhangi', name: 'Prof. Shubhangi', email: 'shubhangi@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC011', username: 'kiran', name: 'Prof. Kiran', email: 'kiran@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC012', username: 'sarala', name: 'Prof. Sarala', email: 'sarala@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC013', username: 'avinash', name: 'Prof. Avinash', email: 'avinash@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC014', username: 'swati', name: 'Prof. Swati', email: 'swati@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC015', username: 'aswini', name: 'Prof. Aswini', email: 'aswini@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC016', username: 'ujwala', name: 'Prof. Ujwala', email: 'ujwala@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC017', username: 'pravin', name: 'Dr. Pravin (HOD)', email: 'pravin@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'FAC018', username: 'priyanka', name: 'Prof. Priyanka', email: 'priyanka@college.edu', password: '[removed]', role: 'teacher' },
+    { id: 'SE-A', username: 'se_a', name: 'SE-A', email: 'se_a@student.edu', password: '[removed]', role: 'student', className: 'SE-A' },
+    { id: 'SE-B', username: 'se_b', name: 'SE-B', email: 'se_b@student.edu', password: '[removed]', role: 'student', className: 'SE-B' },
+    { id: 'TE-A', username: 'te_a', name: 'TE-A', email: 'te_a@student.edu', password: '[removed]', role: 'student', className: 'TE-A' },
+    { id: 'TE-B', username: 'te_b', name: 'TE-B', email: 'te_b@student.edu', password: '[removed]', role: 'student', className: 'TE-B' },
+    { id: 'BE-A', username: 'be_a', name: 'BE-A', email: 'be_a@student.edu', password: '[removed]', role: 'student', className: 'BE-A' },
+    { id: 'BE-B', username: 'be_b', name: 'BE-B', email: 'be_b@student.edu', password: '[removed]', role: 'student', className: 'BE-B' },
+  ];
+
+  for (const u of usersToSeed) {
+    try {
+      const existing = await query(`SELECT id FROM users WHERE LOWER(username) = LOWER($1) OR id = $2`, [u.username, u.id]);
+      if (existing.rows.length === 0) {
+        const passwordHash = await bcrypt.hash(u.password, 10);
+        await query(
+          `INSERT INTO users (id, username, name, email, "passwordHash", role, "className", section, specialization, college)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [u.id, u.username, u.name, u.email, passwordHash, u.role, u.className || null, 'A', 'Core', 'CSE (Data Science) Department']
+        );
+        console.log(`👤 Seeded user: ${u.username} (${u.id})`);
+      } else if (existing.rows[0].id !== u.id) {
+        await query(`UPDATE users SET id = $1 WHERE LOWER(username) = LOWER($2)`, [u.id, u.username]);
+        console.log(`🔄 Updated user ID for ${u.username} to ${u.id}`);
+      }
+    } catch (e) {
+      console.error(`⚠️ Failed to seed user ${u.username}:`, e.message);
+    }
+  }
+}
+
 
 initDB();
 
@@ -813,78 +890,145 @@ app.put('/api/lectures/:lectureId/cancel', async (req, res) => {
 // SCHEDULE NOTIFICATION
 app.post('/api/notifications/schedule', async (req, res) => {
   try {
-    const { lectureId, title, message, notificationType, className, section, scheduledAt, college } = req.body;
+    const { lectureId, title, message, notificationType, className, section, scheduledAt, college, targetDivision } = req.body;
 
     let senderCollege = college;
+    let senderId = 'system';
+    let senderName = 'System';
+    let senderRole = 'system';
 
-    // Try to auth; if token is valid, use sender's info as fallback
+    // Try to auth; if token is valid, use sender's info as fallback and for senderRole/senderName
     const token = req.headers.authorization?.split(' ')[1];
     if (token) {
       try {
         const decoded = jwt.verify(token, secret);
-        const teacherResult = await query(`SELECT college FROM users WHERE id = $1`, [decoded.userId]);
-        const teacher = teacherResult.rows[0];
-        if (teacher && teacher.college) {
-          senderCollege = senderCollege || teacher.college;
+        const senderResult = await query(`SELECT id, role, name, college FROM users WHERE id = $1`, [decoded.userId]);
+        const sender = senderResult.rows[0];
+        if (sender) {
+          senderId = sender.id;
+          senderName = sender.name;
+          senderRole = sender.role;
+          senderCollege = senderCollege || sender.college;
         }
       } catch (err) {
-        // Token invalid — proceed with explicit fields only
+        // Token invalid — proceed with default/fallback
       }
     }
 
-    // Parse class and specialization from className parameter if it includes ' - '
-    let parsedClass = className;
-    let parsedSpecialization = null;
-    if (className && className.includes(' - ')) {
-      const parts = className.split(' - ');
-      parsedClass = parts[0].trim();
-      parsedSpecialization = parts.slice(1).join(' - ').trim();
-    }
+    let recipientsRows = [];
 
-    const students = await query(
-      `SELECT id, "fcmToken" FROM users
-       WHERE role = 'student'
-         AND ($1::text IS NULL OR $1::text = '' OR COALESCE(LOWER(TRIM("className")), '') = COALESCE(LOWER(TRIM($1)), ''))
-         AND ($2::text IS NULL OR $2::text = '' OR COALESCE(LOWER(TRIM(section)), '') = COALESCE(LOWER(TRIM($2)), ''))
-         AND (
-           COALESCE(LOWER(TRIM(specialization)), '') = ''
-           OR $3::text IS NULL OR $3::text = ''
-           OR COALESCE(LOWER(TRIM(specialization)), '') = COALESCE(LOWER(TRIM($3)), '')
-         )
-         AND (
-           COALESCE(LOWER(TRIM(college)), '') = ''
-           OR $4::text IS NULL OR $4::text = ''
-           OR COALESCE(LOWER(TRIM(college)), '') = COALESCE(LOWER(TRIM($4)), '')
+    if (notificationType === 'all') {
+      // 1. All Users (Students, Teachers, Admins)
+      const result = await query(
+        `SELECT id, "fcmToken" FROM users WHERE "deletedAt" IS NULL`
+      );
+      recipientsRows = result.rows;
+    } else if (notificationType === 'all_students') {
+      // 2. All Students across all classes
+      const result = await query(
+        `SELECT id, "fcmToken" FROM users WHERE role = 'student' AND "deletedAt" IS NULL`
+      );
+      recipientsRows = result.rows;
+    } else if (notificationType === 'teacher' && (!targetDivision || targetDivision === 'all')) {
+      // 3. All Teachers
+      const result = await query(
+        `SELECT id, "fcmToken" FROM users WHERE role = 'teacher' AND "deletedAt" IS NULL`
+      );
+      recipientsRows = result.rows;
+    } else if (notificationType === 'teacher') {
+      // 4. Specific Teacher
+      const targetFacId = targetDivision || '';
+      const mappedUsername = facMap[targetFacId] || targetFacId;
+      const cleanName = targetFacId.replace('Prof. ', '').trim();
+
+      const result = await query(
+        `SELECT id, "fcmToken" FROM users 
+         WHERE role = 'teacher' AND "deletedAt" IS NULL
+           AND (
+             id = $1 
+             OR LOWER(username) = LOWER($1) 
+             OR LOWER(username) = LOWER($2)
+             OR LOWER(name) LIKE '%' || LOWER($3) || '%'
+           )`,
+        [targetFacId, mappedUsername, cleanName]
+      );
+      recipientsRows = result.rows;
+    } else if (notificationType === 'student') {
+      // 5. Specific Class
+      let targetClass = className || targetDivision;
+      if (targetClass && targetClass.includes(' - ')) {
+        targetClass = targetClass.split(' - ')[0].trim();
+      }
+      const result = await query(
+        `SELECT id, "fcmToken" FROM users
+         WHERE role = 'student' AND "deletedAt" IS NULL
+           AND COALESCE(LOWER(TRIM("className")), '') = COALESCE(LOWER(TRIM($1)), '')`,
+        [targetClass]
+      );
+      recipientsRows = result.rows;
+    } else if (notificationType === 'teacher_and_class') {
+      // 6. Specific Class & Teacher
+      let targetClass = className;
+      let targetTeacherId = null;
+      if (targetDivision && targetDivision.includes('||')) {
+        const parts = targetDivision.split('||');
+        targetClass = parts[0];
+        targetTeacherId = parts[1];
+      }
+      if (targetClass && targetClass.includes(' - ')) {
+        targetClass = targetClass.split(' - ')[0].trim();
+      }
+
+      const targetFacId = targetTeacherId || '';
+      const mappedUsername = facMap[targetFacId] || targetFacId;
+      const cleanName = targetFacId.replace('Prof. ', '').trim();
+
+      const result = await query(
+        `SELECT id, "fcmToken" FROM users
+         WHERE "deletedAt" IS NULL AND (
+           (role = 'student' AND COALESCE(LOWER(TRIM("className")), '') = COALESCE(LOWER(TRIM($1)), ''))
+           OR (role = 'teacher' AND (
+                 id = $2 
+                 OR LOWER(username) = LOWER($2) 
+                 OR LOWER(username) = LOWER($3)
+                 OR LOWER(name) LIKE '%' || LOWER($4) || '%'
+              ))
          )`,
-      [
-        parsedClass || null,
-        section || null,
-        parsedSpecialization || null,
-        senderCollege || null
-      ]
-    );
+        [targetClass, targetFacId, mappedUsername, cleanName]
+      );
+      recipientsRows = result.rows;
+    } else {
+      // General Fallback
+      const result = await query(
+        `SELECT id, "fcmToken" FROM users WHERE "deletedAt" IS NULL`
+      );
+      recipientsRows = result.rows;
+    }
 
     const scheduledTime = scheduledAt || new Date().toISOString();
 
-    // Track sender (teacher/admin) notification record
-    try {
-      const decoded = jwt.verify(req.headers.authorization?.split(' ')[1], secret);
-      await query(
-        `INSERT INTO notifications (id, "studentId", "lectureId", title, message, "notificationType", "scheduledAt") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-        [generateId(), decoded.userId, lectureId, title, message, notificationType, scheduledTime]
-      );
-    } catch (_) {}
+    // Use a Set to collect all user IDs to insert notifications for, ensuring no duplicates
+    const recipientIds = new Set(recipientsRows.map(r => r.id));
 
+    // Also include sender in notifications list so they have record in their dashboard
+    if (senderId && senderId !== 'system') {
+      recipientIds.add(senderId);
+    }
+
+    // Insert notification records for all recipients
+    for (const rId of recipientIds) {
+      await query(
+        `INSERT INTO notifications (id, "studentId", "lectureId", title, message, "notificationType", "scheduledAt", "senderId", "senderName", "senderRole") 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [generateId(), rId, lectureId, title, message, notificationType, scheduledTime, senderId, senderName, senderRole]
+      );
+    }
+
+    // Send FCM push notifications to target recipients (excluding sender to avoid duplicate popups)
     let fcmTokens = [];
-
-    // Insert for all students
-    for (const student of students.rows) {
-      await query(
-        `INSERT INTO notifications (id, "studentId", "lectureId", title, message, "notificationType", "scheduledAt") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-        [generateId(), student.id, lectureId, title, message, notificationType, scheduledTime]
-      );
-      if (student.fcmToken) {
-        fcmTokens.push(student.fcmToken);
+    for (const recipient of recipientsRows) {
+      if (recipient.id !== senderId && recipient.fcmToken) {
+        fcmTokens.push(recipient.fcmToken);
       }
     }
 
@@ -926,13 +1070,19 @@ app.get('/api/notifications/teacher', async (req, res) => {
     if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
     const decoded = jwt.verify(token, secret);
+    const userRow = await query(`SELECT username FROM users WHERE id = $1`, [decoded.userId]);
+    const username = userRow.rows[0]?.username || '';
+    const mappedFacId = Object.keys(facMap).find(k => facMap[k] === username.toLowerCase()) || '';
+
     const rows = await query(
       `SELECT n.*, l."subjectName", l."className", l.section 
        FROM notifications n
        LEFT JOIN lectures l ON n."lectureId" = l.id
        WHERE n."studentId" = $1
+          OR ( $2 <> '' AND LOWER(n."studentId") = LOWER($2) )
+          OR ( $3 <> '' AND LOWER(n."studentId") = LOWER($3) )
        ORDER BY n."scheduledAt" DESC`,
-      [decoded.userId]
+      [decoded.userId, username, mappedFacId]
     );
 
     res.json(rows.rows);
@@ -952,11 +1102,21 @@ app.delete('/api/notifications/:id', async (req, res) => {
     const { id } = req.params;
 
     const rowResult = await query(
-      `SELECT "lectureId", "studentId", title, message FROM notifications WHERE id = $1`,
+      `SELECT "lectureId", "studentId", title, message, "senderRole" FROM notifications WHERE id = $1`,
       [id]
     );
     const row = rowResult.rows[0];
     if (!row) return res.status(404).json({ success: false, message: 'Notification not found' });
+
+    // Fetch requesting user role
+    const userResult = await query(`SELECT role FROM users WHERE id = $1`, [decoded.userId]);
+    const requesterRole = userResult.rows[0]?.role;
+
+    // Teachers cannot delete notifications sent by admin
+    const senderRole = row.senderRole || 'admin'; // Treat NULL as admin for safety
+    if (requesterRole === 'teacher' && senderRole === 'admin') {
+      return res.status(403).json({ success: false, message: 'Teachers are not allowed to delete admin notifications' });
+    }
 
     // Verify the requesting user owns this notification or is the teacher who sent it
     if (row.studentId !== decoded.userId) {
@@ -985,11 +1145,9 @@ app.get('/api/notifications/student', async (req, res) => {
     if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
     const decoded = jwt.verify(token, secret);
-    const now = new Date().toISOString();
-
     const notifications = await query(
-      `SELECT * FROM notifications WHERE "studentId" = $1 AND "scheduledAt" <= $2 ORDER BY "scheduledAt" DESC`,
-      [decoded.userId, now]
+      `SELECT * FROM notifications WHERE "studentId" = $1 ORDER BY "scheduledAt" DESC`,
+      [decoded.userId]
     );
 
     res.json(notifications.rows);

@@ -44,6 +44,8 @@ class NotificationServiceLocal {
     for (final notif in list) {
       if (notif.targetRole == 'all' || notif.targetRole == role) {
         notif.isRead = true;
+      } else if (notif.targetRole == 'all_students' && role == 'student') {
+        notif.isRead = true;
       } else if (notif.targetRole == 'department') {
         final normTarget = normalize(notif.targetDivision);
         final normDepartment = normalize(department);
@@ -82,8 +84,11 @@ class NotificationServiceLocal {
     final normDivision = normalize(division);
 
     return all.where((notif) {
-      // Rule 1: targetRole is 'all'
+      // Rule 1: targetRole is 'all' (admin broadcast to everyone)
       if (notif.targetRole == 'all') return true;
+
+      // Rule 2: targetRole is 'all_students' (admin broadcast to all students)
+      if (notif.targetRole == 'all_students' && role == 'student') return true;
 
       if (notif.targetRole == 'department') {
         final normTarget = normalize(notif.targetDivision);
@@ -91,7 +96,7 @@ class NotificationServiceLocal {
         return normTarget == 'all' || normTarget == normDepartment;
       }
 
-      // Rule 2: matches exact role
+      // Rule 3: matches exact role
       if (notif.targetRole == role) {
         // If it's a student, check division or exact student ID
         if (role == 'student') {
@@ -108,7 +113,7 @@ class NotificationServiceLocal {
         return true;
       }
 
-      // Rule 3: combined class + teacher notifications
+      // Rule 4: combined class + teacher notifications
       if (notif.targetRole == 'teacher_and_class') {
         final parts = notif.targetDivision.split('||');
         if (parts.length != 2) return false;

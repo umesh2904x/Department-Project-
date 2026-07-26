@@ -38,7 +38,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
       final user = auth.user;
       if (user != null && user.role == 'teacher') {
         setState(() {
-          _selectedTargetRole = 'teacher';
+          _selectedTargetRole = 'class';
         });
       }
     });
@@ -135,6 +135,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
         targetDivision: targetDivision,
         senderId: user.id,
         senderName: user.name,
+        senderRole: user.role,
         createdAt: DateTime.now().toString(),
       );
 
@@ -154,6 +155,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
         section: '',
         college: (_selectedTargetRole == 'all_students' || _selectedTargetRole == 'all') ? targetDivision : null,
         scheduledAt: DateTime.now().toIso8601String(),
+        targetDivision: targetDivision,
       ).then((apiResp) {
         if (apiResp['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -293,9 +295,9 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                           DropdownMenuItem(value: 'teacher_and_class', child: Text('Specific Class & Teacher')),
                         ]
                       : const [
-                          DropdownMenuItem(value: 'all_students', child: Text('All Students')),
-                          DropdownMenuItem(value: 'teacher', child: Text('Specific Teacher')),
                           DropdownMenuItem(value: 'class', child: Text('Specific Class')),
+                          DropdownMenuItem(value: 'teacher', child: Text('Specific Teacher')),
+                          DropdownMenuItem(value: 'teacher_and_class', child: Text('Specific Class & Teacher')),
                         ],
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedTargetRole = val);
