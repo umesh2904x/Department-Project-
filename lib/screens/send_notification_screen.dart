@@ -22,7 +22,7 @@ class SendNotificationScreen extends StatefulWidget {
 class _SendNotificationScreenState extends State<SendNotificationScreen> {
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
-  String _selectedTargetRole = 'class'; // 'all', 'all_students', 'teachers', 'teacher', 'class'
+  String _selectedTargetRole = 'class'; // admin: 'all'|'all_students'|'teachers'|'teacher'|'class'|'teacher_and_class'  teacher: 'class'|'teacher'|'teacher_and_class'
   String _selectedDivision = 'SE-A';
   String _selectedTeacherId = '';
   List<FacultyMember> _facultyList = [];
@@ -314,6 +314,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
+                  key: ValueKey('teacher_select_${_facultyList.length}_$_selectedTeacherId'),
                   initialValue: _facultyList.isNotEmpty ? _selectedTeacherId : null,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
