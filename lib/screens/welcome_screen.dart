@@ -57,7 +57,7 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'CSE (Data Science) Timetable',
+                          'Kairos',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 26,

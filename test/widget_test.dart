@@ -12,6 +12,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Get Started / Login'), findsOneWidget);
-    expect(find.text('CSE (Data Science) Timetable'), findsWidgets);
+    expect(find.text('Kairos'), findsWidgets);
   });
 }

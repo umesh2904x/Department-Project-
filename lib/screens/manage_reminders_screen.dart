@@ -5,7 +5,7 @@ import '../providers/lecture_provider.dart';
 import '../widgets/loading_widget.dart';
 
 class ManageRemindersScreen extends StatefulWidget {
-  const ManageRemindersScreen({Key? key}) : super(key: key);
+  const ManageRemindersScreen({super.key});
 
   @override
   State<ManageRemindersScreen> createState() => _ManageRemindersScreenState();

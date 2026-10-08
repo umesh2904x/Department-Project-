@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SupportChatDialog extends StatefulWidget {
-  const SupportChatDialog({Key? key}) : super(key: key);
+  const SupportChatDialog({super.key});
 
   @override
   State<SupportChatDialog> createState() => _SupportChatDialogState();

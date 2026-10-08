@@ -71,14 +71,14 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
           // Day selector
           Container(
             color: Colors.deepPurple.shade50,
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: days.map((day) {
                   final isSelected = _selectedDay == day;
                   return Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: ElevatedButton(
                       onPressed: () {
                         setState(() {
@@ -115,7 +115,7 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
             child: Consumer<LectureProvider>(
               builder: (context, lectureProvider, _) {
                 if (lectureProvider.isLoading) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 // Filter timetable entries by selected day
@@ -156,12 +156,12 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.event_note,
                           size: 80,
                           color: Colors.grey,
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         Text(
                           'No lectures on $_selectedDay',
                           style: GoogleFonts.poppins(
@@ -175,14 +175,14 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                 }
 
                 return ListView.builder(
-                  padding: EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(12),
                   itemCount: entriesForDay.length,
                   itemBuilder: (context, index) {
                     final entry = entriesForDay[index];
 
                     return Card(
                       elevation: 4,
-                      margin: EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -200,7 +200,7 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                           children: [
                             Expanded(
                               child: Padding(
-                                padding: EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -212,14 +212,14 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(height: 12),
+                                    const SizedBox(height: 12),
 
                                     // Teacher
                                     Row(
                                       children: [
-                                        Icon(Icons.person,
+                                        const Icon(Icons.person,
                                             size: 18, color: Colors.grey),
-                                        SizedBox(width: 8),
+                                        const SizedBox(width: 8),
                                         Text(
                                           entry.teacherName,
                                           style: GoogleFonts.poppins(
@@ -229,14 +229,14 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                                         ),
                                       ],
                                     ),
-                                    SizedBox(height: 10),
+                                    const SizedBox(height: 10),
 
                                     // Time
                                     Row(
                                       children: [
-                                        Icon(Icons.schedule,
+                                        const Icon(Icons.schedule,
                                             size: 18, color: Colors.deepPurple),
-                                        SizedBox(width: 8),
+                                        const SizedBox(width: 8),
                                         Text(
                                           '${entry.startTime} - ${entry.endTime}',
                                           style: GoogleFonts.poppins(
@@ -246,14 +246,14 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                                         ),
                                       ],
                                     ),
-                                    SizedBox(height: 10),
+                                    const SizedBox(height: 10),
 
                                     // Room
                                     Row(
                                       children: [
-                                        Icon(Icons.door_front_door,
+                                        const Icon(Icons.door_front_door,
                                             size: 18, color: Colors.orange),
-                                        SizedBox(width: 8),
+                                        const SizedBox(width: 8),
                                         Text(
                                           'Room ${entry.roomNumber}',
                                           style: GoogleFonts.poppins(
@@ -264,9 +264,9 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                                       ],
                                     ),
                                     if (entry.isCancelled) ...[
-                                      SizedBox(height: 12),
+                                      const SizedBox(height: 12),
                                       Container(
-                                        padding: EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                           horizontal: 12,
                                           vertical: 6,
                                         ),
@@ -292,13 +292,13 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
                               builder: (context, auth, _) {
                                 if (auth.user?.role == 'teacher') {
                                   return IconButton(
-                                    icon: Icon(Icons.delete_outline,
+                                    icon: const Icon(Icons.delete_outline,
                                         color: Colors.red),
                                     onPressed: () =>
                                         _confirmDelete(context, entry.id),
                                   );
                                 }
-                                return SizedBox.shrink();
+                                return const SizedBox.shrink();
                               },
                             ),
                           ],
@@ -319,17 +319,17 @@ class _ViewTimetableScreenState extends State<ViewTimetableScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Entry'),
-        content: Text('Remove this entry from the weekly timetable?'),
+        title: const Text('Delete Entry'),
+        content: const Text('Remove this entry from the weekly timetable?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               await Provider.of<LectureProvider>(context, listen: false).deleteTimetable(id);
               if (mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Delete'),
+            child: const Text('Delete'),
           ),
         ],
       ),

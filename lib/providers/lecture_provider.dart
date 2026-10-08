@@ -214,7 +214,7 @@ class LectureProvider with ChangeNotifier {
     required String className,
     required String section,
     required String day,
-    required String startTime,
+     required String startTime,
     required String endTime,
     required String roomNumber,
   }) async {

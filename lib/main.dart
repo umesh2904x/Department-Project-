@@ -72,7 +72,7 @@ class MyApp extends StatelessWidget {
         builder: (context, themeProvider, child) {
           return MaterialApp(
             navigatorKey: navigatorKey,
-            title: 'CSE (Data Science) Timetable',
+            title: 'Kairos',
             debugShowCheckedModeBanner: false,
             themeMode: ThemeMode.light,
             theme: ThemeData(

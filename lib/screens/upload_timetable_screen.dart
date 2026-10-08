@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../utils/class_config.dart';
 
 class UploadTimetableScreen extends StatefulWidget {
-  const UploadTimetableScreen({Key? key}) : super(key: key);
+  const UploadTimetableScreen({super.key});
 
   @override
   State<UploadTimetableScreen> createState() => _UploadTimetableScreenState();
@@ -174,7 +174,7 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
           style: GoogleFonts.poppins(fontSize: 14),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
             prefixIcon: Icon(icon, color: Colors.deepPurple.shade600, size: 20),
             hintText: 'Type ${label.replaceAll(' *', '')}...',
             hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey),
@@ -210,11 +210,11 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<T>(
-          value: value,
+          initialValue: value,
           isExpanded: true,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
             prefixIcon:
                 Icon(icon, color: Colors.deepPurple.shade600, size: 20),
             border: OutlineInputBorder(
@@ -272,7 +272,7 @@ class _UploadTimetableScreenState extends State<UploadTimetableScreen> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade400),
             ),
