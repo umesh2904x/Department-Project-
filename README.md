@@ -71,6 +71,8 @@ Configure the backend environment before starting it:
 
 Alternatively, the backend can load a local `firebase-service-account.json`. Keep that file and all environment files private; do not commit credentials. The app currently uses a hosted API URL by default, so update its API base URL if you want the client to use your local backend.
 
+There are no built-in demo login accounts. Create users through the registration flow; do not add real passwords or account credentials to source code.
+
 ## Notifications and Firebase
 
 Firebase client options are in `lib/firebase_options.dart`. Configure Firebase for each platform you intend to run, following the official [FlutterFire setup guide](https://firebase.google.com/docs/flutter/setup). Push notifications also require valid Firebase Admin credentials in the backend environment.

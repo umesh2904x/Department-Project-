@@ -15,7 +15,11 @@ const { body, validationResult } = require('express-validator');
 // ── Security Middleware ──────────────────────────────────────────────────────
 
 dotenv.config({ path: path.join(__dirname, '.env') });
-const secret = process.env.JWT_SECRET || '[removed]';
+const secret = process.env.JWT_SECRET;
+if (!secret) {
+  console.error('❌ FATAL: JWT_SECRET environment variable is not set!');
+  process.exit(1);
+}
 const app = express();
 
 const facMap = {
@@ -427,63 +431,10 @@ async function initDB() {
       );
     `);
 
-    await seedUsers();
-    console.log('✅ All tables and pre-seeded users ready');
     console.log('✅ PostgreSQL (Neon) Connected & Ready!');
   } catch (err) {
     console.error('❌ DB Init Error:', err);
     process.exit(1);
-  }
-}
-
-async function seedUsers() {
-  const usersToSeed = [
-    { id: 'admin1', username: 'admin1', name: 'Admin 1', email: 'admin1@college.edu', password: '[removed]', role: 'admin' },
-    { id: 'admin2', username: 'admin2', name: 'Admin 2', email: 'admin2@college.edu', password: '[removed]', role: 'admin' },
-    { id: 'FAC001', username: 'avani', name: 'Prof. Avani', email: 'avani@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC002', username: 'hardiki', name: 'Prof. Hardiki', email: 'hardiki@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC003', username: 'harsha', name: 'Prof. Harsha', email: 'harsha@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC004', username: 'deepali', name: 'Prof. Deepali', email: 'deepali@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC005', username: 'poonam', name: 'Prof. Poonam', email: 'poonam@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC006', username: 'veena_t', name: 'Prof. Veena T.', email: 'veena_t@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC007', username: 'veena_g', name: 'Prof. Veena G.', email: 'veena_g@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC008', username: 'rajashri', name: 'Prof. Rajashri', email: 'rajashri@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC009', username: 'richa', name: 'Prof. Richa', email: 'richa@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC010', username: 'shubhangi', name: 'Prof. Shubhangi', email: 'shubhangi@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC011', username: 'kiran', name: 'Prof. Kiran', email: 'kiran@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC012', username: 'sarala', name: 'Prof. Sarala', email: 'sarala@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC013', username: 'avinash', name: 'Prof. Avinash', email: 'avinash@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC014', username: 'swati', name: 'Prof. Swati', email: 'swati@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC015', username: 'aswini', name: 'Prof. Aswini', email: 'aswini@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC016', username: 'ujwala', name: 'Prof. Ujwala', email: 'ujwala@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC017', username: 'pravin', name: 'Dr. Pravin (HOD)', email: 'pravin@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'FAC018', username: 'priyanka', name: 'Prof. Priyanka', email: 'priyanka@college.edu', password: '[removed]', role: 'teacher' },
-    { id: 'SE-A', username: 'se_a', name: 'SE-A', email: 'se_a@student.edu', password: '[removed]', role: 'student', className: 'SE-A' },
-    { id: 'SE-B', username: 'se_b', name: 'SE-B', email: 'se_b@student.edu', password: '[removed]', role: 'student', className: 'SE-B' },
-    { id: 'TE-A', username: 'te_a', name: 'TE-A', email: 'te_a@student.edu', password: '[removed]', role: 'student', className: 'TE-A' },
-    { id: 'TE-B', username: 'te_b', name: 'TE-B', email: 'te_b@student.edu', password: '[removed]', role: 'student', className: 'TE-B' },
-    { id: 'BE-A', username: 'be_a', name: 'BE-A', email: 'be_a@student.edu', password: '[removed]', role: 'student', className: 'BE-A' },
-    { id: 'BE-B', username: 'be_b', name: 'BE-B', email: 'be_b@student.edu', password: '[removed]', role: 'student', className: 'BE-B' },
-  ];
-
-  for (const u of usersToSeed) {
-    try {
-      const existing = await query(`SELECT id FROM users WHERE LOWER(username) = LOWER($1) OR id = $2`, [u.username, u.id]);
-      if (existing.rows.length === 0) {
-        const passwordHash = await bcrypt.hash(u.password, 10);
-        await query(
-          `INSERT INTO users (id, username, name, email, "passwordHash", role, "className", section, specialization, college)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [u.id, u.username, u.name, u.email, passwordHash, u.role, u.className || null, 'A', 'Core', 'CSE (Data Science) Department']
-        );
-        console.log(`👤 Seeded user: ${u.username} (${u.id})`);
-      } else if (existing.rows[0].id !== u.id) {
-        await query(`UPDATE users SET id = $1 WHERE LOWER(username) = LOWER($2)`, [u.id, u.username]);
-        console.log(`🔄 Updated user ID for ${u.username} to ${u.id}`);
-      }
-    } catch (e) {
-      console.error(`⚠️ Failed to seed user ${u.username}:`, e.message);
-    }
   }
 }
 
@@ -530,8 +481,6 @@ app.post('/api/auth/register',
   async (req, res) => {
   try {
     const { identifier, name, password, role, className, section, specialization, college, phone } = req.body;
-    const secret = process.env.JWT_SECRET || '[removed]';
-
     if (!identifier || !name || !password || !role) {
       return res.status(400).json({
         success: false,
@@ -600,7 +549,6 @@ app.post('/api/auth/login',
   async (req, res) => {
   try {
     const { email: identifier, password, role, fcmToken } = req.body;
-    const secret = process.env.JWT_SECRET || '[removed]';
     console.log(`🔑 Login attempt: Identifier=[${identifier}] Role=[${role}]`);
 
     const result = await query(

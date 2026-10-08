@@ -18,7 +18,8 @@ class FacultyService {
       return seeded;
     }
 
-    final list = data.map((item) => FacultyMember.fromJson(jsonDecode(item))).toList();
+    final list =
+        data.map((item) => FacultyMember.fromJson(jsonDecode(item))).toList();
     bool updated = false;
 
     if (!list.any((f) => f.name.contains('Priyanka') || f.id == 'FAC018')) {
@@ -30,7 +31,17 @@ class FacultyService {
         subjects: ['Computer Networks', 'Data Science'],
         maxLecturesPerDay: 4,
         maxLecturesPerWeek: 16,
-        availableTimings: ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9'],
+        availableTimings: [
+          'S1',
+          'S2',
+          'S3',
+          'S4',
+          'S5',
+          'S6',
+          'S7',
+          'S8',
+          'S9'
+        ],
         preferredRooms: ['203', '204'],
         email: 'priyanka@college.edu',
         phone: '9876543218',
@@ -81,31 +92,36 @@ class FacultyService {
     }
   }
 
-  /// Generate pre-seeded list from AppConstants credentials
+  /// Generate the display directory without embedding login credentials.
   static List<FacultyMember> _preSeedFaculty() {
     final list = <FacultyMember>[];
-    AppConstants.credentials.forEach((username, info) {
-      if (info['role'] == 'teacher') {
-        final id = info['id']!;
-        final name = info['name']!;
-        final email = '$username@college.edu';
-        final phone = '98765432${list.length.toString().padLeft(2, '0')}';
-        final isHod = name.contains('(HOD)');
-        
-        list.add(FacultyMember(
-          id: id,
-          name: name,
-          employeeId: 'EMP${100 + list.length}',
-          designation: isHod ? 'HOD' : 'Assistant Professor',
-          subjects: isHod ? ['Management', 'Research'] : ['Subject ${list.length + 1}'],
-          maxLecturesPerDay: isHod ? 2 : 4,
-          maxLecturesPerWeek: isHod ? 8 : 16,
-          availableTimings: ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9'],
-          preferredRooms: isHod ? ['504'] : ['201', '202'],
-          email: email,
-          phone: phone,
-        ));
-      }
+    AppConstants.facultyIdToName.forEach((id, name) {
+      final isHod = name.contains('(HOD)');
+
+      list.add(FacultyMember(
+        id: id,
+        name: name,
+        employeeId: 'EMP${100 + list.length}',
+        designation: isHod ? 'HOD' : 'Assistant Professor',
+        subjects:
+            isHod ? ['Management', 'Research'] : ['Subject ${list.length + 1}'],
+        maxLecturesPerDay: isHod ? 2 : 4,
+        maxLecturesPerWeek: isHod ? 8 : 16,
+        availableTimings: [
+          'S1',
+          'S2',
+          'S3',
+          'S4',
+          'S5',
+          'S6',
+          'S7',
+          'S8',
+          'S9'
+        ],
+        preferredRooms: isHod ? ['504'] : ['201', '202'],
+        email: '${id.toLowerCase()}@college.edu',
+        phone: '98765432${list.length.toString().padLeft(2, '0')}',
+      ));
     });
     return list;
   }
